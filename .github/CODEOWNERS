@@ -1,0 +1,36 @@
+# Dueño por defecto: todo lo que no tenga una regla más específica.
+*                                                 @Choppers-code/arquitectura
+
+# ---------- Documentación y convenciones ----------
+/docs/                                            @Choppers-code/arquitectura
+/AGENTS.md                                        @Choppers-code/arquitectura
+/README.md                                        @Choppers-code/arquitectura
+
+# ---------- Backend: arquitectura y transversal ----------
+/backend/build.gradle.kts                         @Choppers-code/infraestructura
+/backend/settings.gradle.kts                      @Choppers-code/infraestructura
+/backend/gradle/                                  @Choppers-code/infraestructura
+/backend/src/main/java/com/vetcat/security/       @Choppers-code/arquitectura
+/backend/src/main/java/com/vetcat/tenancy/        @Choppers-code/arquitectura
+/backend/src/main/java/com/vetcat/catalogo/       @Choppers-code/arquitectura
+/backend/src/main/java/com/vetcat/plataforma/     @Choppers-code/arquitectura
+/backend/src/main/java/com/vetcat/shared/         @Choppers-code/arquitectura
+
+# ---------- Backend: pacientes y expediente ----------
+/backend/src/main/java/com/vetcat/propietarios/   @Choppers-code/pacientes
+/backend/src/main/java/com/vetcat/mascotas/       @Choppers-code/pacientes
+/backend/src/main/java/com/vetcat/expediente/     @Choppers-code/pacientes
+/backend/src/main/java/com/vetcat/portal/         @Choppers-code/pacientes
+
+# ---------- Backend: operación y cobro ----------
+/backend/src/main/java/com/vetcat/citas/          @Choppers-code/operacion
+/backend/src/main/java/com/vetcat/vacunas/        @Choppers-code/operacion
+/backend/src/main/java/com/vetcat/facturacion/    @Choppers-code/operacion
+
+# ---------- Frontend ----------
+/frontend/                                        @Choppers-code/frontend
+
+# ---------- Infraestructura ----------
+/database/                                        @Choppers-code/infraestructura
+/infrastructure/                                  @Choppers-code/infraestructura
+/.github/                                         @Choppers-code/infraestructura

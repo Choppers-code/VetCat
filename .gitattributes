@@ -1,0 +1,21 @@
+# Normalización de finales de línea.
+# Sin esto, en Windows cada archivo entra como CRLF y los diffs se vuelven ruido.
+* text=auto eol=lf
+
+# Binarios: nunca normalizar
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.webp     binary
+*.jar      binary
+*.keystore binary
+*.jks      binary
+
+# Scripts de Windows: CRLF obligatorio
+*.bat      text eol=crlf
+*.cmd      text eol=crlf
+
+# El wrapper de Gradle debe seguir siendo ejecutable en Linux y en CI
+gradlew    text eol=lf

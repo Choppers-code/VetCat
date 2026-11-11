@@ -1,0 +1,50 @@
+# ---------- Entorno y secretos ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+
+# ---------- Java / Gradle ----------
+.gradle/
+build/
+out/
+bin/
+*.class
+*.log
+
+# ---------- Flutter / Dart ----------
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+frontend/**/.flutter-plugins
+frontend/**/.flutter-plugins-dependencies
+frontend/**/android/local.properties
+frontend/**/android/key.properties
+frontend/**/android/.gradle/
+frontend/**/android/app/debug/
+frontend/**/android/app/profile/
+frontend/**/android/app/release/
+frontend/**/*.iml
+
+# ---------- Firma Android ----------
+*.keystore
+*.jks
+key.properties
+
+# ---------- IDE ----------
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ---------- Sistema ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---------- Volúmenes y datos locales ----------
+infrastructure/volumes/
+*.dump
+*.sql.gz
