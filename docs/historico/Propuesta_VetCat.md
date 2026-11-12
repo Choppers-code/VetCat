@@ -1,3 +1,5 @@
+> **Obsoleto.** Documento v1.0 conservado como referencia histórica. No describe el proyecto actual: la fuente de verdad está en `README.md` y en los documentos vigentes de `docs/`.
+
 # VetCat — Propuesta de Sistema SaaS para Clínicas Veterinarias
 
 > **Versión:** 1.0 · **Fecha:** 2026-11-06 · **Estado:** Propuesta técnica

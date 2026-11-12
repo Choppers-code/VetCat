@@ -1,3 +1,5 @@
+> **Obsoleto.** Documento v1.0 conservado como referencia histórica. No describe el proyecto actual: la fuente de verdad está en `README.md` y en los documentos vigentes de `docs/`.
+
 # Plan de implementación y distribución del trabajo — VetCat
 
 Después de revisar `Propuesta_VetCat.md`, mi recomendación es desarrollar VetCat como un proyecto de equipo organizado en 5 responsabilidades técnicas, trabajando por fases y con integraciones frecuentes.

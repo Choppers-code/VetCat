@@ -1,6 +1,6 @@
 # Decisiones técnicas
 
-Correcciones y definiciones que resuelven las contradicciones entre `Propuesta_VetCat.md` y `Plan_inicial.md`. Cada decisión es la que se implementa; las dos fuentes originales quedan como referencia histórica.
+Correcciones y definiciones que resuelven las contradicciones entre `historico/Propuesta_VetCat.md` y `historico/Plan_inicial.md`. Cada decisión es la que se implementa; las dos fuentes originales quedan como referencia histórica.
 
 ## 1. Multi-tenancy: catálogo global + esquema por clínica
 

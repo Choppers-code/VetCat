@@ -12,7 +12,7 @@ Read, in this order:
 5. `docs/Equipo_responsabilidades.md` — who owns what, and the anti-overlap rules.
 6. `docs/Despliegue_y_operacion.md` — environments, migrations, backups, monitoring.
 
-`docs/Propuesta_VetCat.md` and `docs/Plan_inicial.md` are the original v1 documents and are **not** kept up to date. Where they conflict with the six documents above, the six above win.
+`docs/historico/Propuesta_VetCat.md` and `docs/historico/Plan_inicial.md` are the original v1 documents and are **not** kept up to date. Where they conflict with the six documents above, the six above win.
 
 Docs are written in Spanish. Keep new docs in Spanish under `docs/`; keep the planned layout (`backend/`, `frontend/`, `database/`, `infrastructure/{docker,keycloak,nginx}`, `docs/`) when scaffolding.
 
