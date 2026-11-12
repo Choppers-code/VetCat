@@ -15,6 +15,7 @@ SaaS multi-clínica para veterinarias pequeñas: agenda de citas, expediente cl�
 | 5 | [Equipo_responsabilidades.md](docs/Equipo_responsabilidades.md) | Quién es dueño de qué y cómo se evita el solape |
 | 6 | [Despliegue_y_operacion.md](docs/Despliegue_y_operacion.md) | Entornos, migraciones, respaldos, monitoreo e incidentes |
 | 7 | [Estructura_proyecto.md](docs/Estructura_proyecto.md) | Qué hay en cada carpeta y dónde va cada cosa |
+| 8 | [Flujo_de_trabajo.md](docs/Flujo_de_trabajo.md) | Ramas, commits, PRs, releases y uso del tablero |
 
 ## Cómo se trabaja
 
