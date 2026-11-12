@@ -48,3 +48,8 @@ Desktop.ini
 infrastructure/volumes/
 *.dump
 *.sql.gz
+
+
+# ---------- Opencode ----------
+opencode/
+opencode.json
