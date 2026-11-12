@@ -4,6 +4,36 @@ SaaS multi-clínica para veterinarias pequeñas: agenda de citas, expediente cl�
 
 **Estado:** planificación. Todavía no hay código de negocio; el repositorio contiene la documentación del plan y la estructura de carpetas.
 
+## Empezar
+
+```powershell
+git clone https://github.com/Choppers-code/VetCat.git
+cd VetCat
+gh auth login
+.\scripts\verificar-entorno.ps1
+.\scripts\nueva-rama.ps1 -Issue <número> -Slug <nombre-corto>
+```
+
+`verificar-entorno.ps1` comprueba que la máquina tenga lo necesario y dice qué falta. `nueva-rama.ps1` crea la rama del issue desde `develop`. Al terminar el trabajo:
+
+```powershell
+.\scripts\terminar-rama.ps1 -Issue <número>
+```
+
+Antes de empezar, elige una tarjeta en *Listo* del [tablero](https://github.com/orgs/Choppers-code/projects/1) y léela entera: los criterios de aceptación están ahí. Hace falta ser miembro de la organización `Choppers-code`; si no lo eres, pídelo al área 1.
+
+## Requisitos
+
+| Herramienta | Versión | Desde cuándo |
+|---|---|---|
+| Git | 2.40 o superior | Siempre |
+| GitHub CLI | 2.40 o superior | Siempre: PR, issues y tablero |
+| JDK | 21, Temurin | Fase 2, backend |
+| Flutter | 3.x | Fase 3, app y consola web |
+| Docker Desktop | con Compose v2 | Fase 1, stack completo |
+
+`verificar-entorno.ps1` los comprueba todos y marca cuáles son obligatorios hoy.
+
 ## Documentación
 
 | # | Documento | Contenido |
@@ -20,13 +50,14 @@ SaaS multi-clínica para veterinarias pequeñas: agenda de citas, expediente cl�
 ## Cómo se trabaja
 
 - **Git Flow**: `main` solo recibe releases y hotfixes; `develop` integra; el trabajo va en `feature/<issue>-<slug>`.
+- **Las ramas se crean con un script**, no a mano: `.\scripts\nueva-rama.ps1 -Issue <n> -Slug <slug>`. El nombre sale siempre bien.
 - **Un issue, una rama, un PR.** El número del issue es lo que une el tablero con el código.
 - **CODEOWNERS decide quién revisa.** Cada paquete y cada carpeta tiene un dueño único.
 - Los mensajes de commit siguen Conventional Commits, con el módulo como scope: `feat(agenda): ...`.
 
 ## Documentos originales
 
-`docs/historico/Propuesta_VetCat.md` (v1.0) y `docs/historico/Plan_inicial.md` son la propuesta y el plan originales. Se conservan como referencia y **no se actualizan**. Donde contradigan a los siete documentos de arriba, mandan los siete de arriba.
+`docs/historico/Propuesta_VetCat.md` (v1.0) y `docs/historico/Plan_inicial.md` son la propuesta y el plan originales. Se conservan como referencia y **no se actualizan**. Donde contradigan a los ocho documentos de arriba, mandan los ocho de arriba.
 
 ## Licencia
 
