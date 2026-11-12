@@ -14,6 +14,8 @@ Cómo se mueve el trabajo en VetCat: del issue a la rama, de la rama al PR y del
 
 La rama por defecto del repositorio es **`develop`**. Un PR abierto desde la web apunta ahí, no a `main`. Es intencional: llegar a `main` exige pasar por un release.
 
+El porqué de este mapa, y por qué `git flow` se usa solo para crear ramas y no para fusionarlas, está en [`adr/ADR-001-git-flow-sin-finish.md`](adr/ADR-001-git-flow-sin-finish.md).
+
 ## 2. El ciclo de un issue
 
 1. El issue existe en el tablero con `Área`, `Fase` y **un solo** responsable.
