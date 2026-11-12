@@ -26,7 +26,7 @@ SaaS multi-clínica para veterinarias pequeñas: agenda de citas, expediente cl�
 
 ## Documentos originales
 
-`docs/Propuesta_VetCat.md` (v1.0) y `docs/Plan_inicial.md` son la propuesta y el plan originales. Se conservan como referencia y **no se actualizan**. Donde contradigan a los siete documentos de arriba, mandan los siete de arriba.
+`docs/historico/Propuesta_VetCat.md` (v1.0) y `docs/historico/Plan_inicial.md` son la propuesta y el plan originales. Se conservan como referencia y **no se actualizan**. Donde contradigan a los siete documentos de arriba, mandan los siete de arriba.
 
 ## Licencia
 
