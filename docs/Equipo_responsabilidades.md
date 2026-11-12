@@ -1,6 +1,6 @@
 # Equipo y responsabilidades
 
-Cinco personas, cinco áreas. La regla que evita el solape: **cada módulo y cada superficie tiene un solo dueño**; los demás aportan por PR revisado, no escribiendo en paralelo.
+Cinco personas, cinco áreas. La regla que evita el solape: **cada módulo y cada superficie tiene un solo responsable**, y ese responsable es quien aprueba sus cambios. Escribir no está restringido; fusionar sí.
 
 ## Las cinco áreas
 
@@ -13,6 +13,8 @@ Cinco personas, cinco áreas. La regla que evita el solape: **cada módulo y cad
 | 5 | Infraestructura, QA y seguridad | Docker, PostgreSQL, Keycloak, migraciones, CI/CD, Play Store y pruebas transversales | 1, 11 | `infrastructure/`, `database/`, `.github/` |
 
 La fase 3 la comparten las áreas 1, 4 y 5: el backend valida tokens, Keycloak se configura y la app implementa el flujo. No es un solape porque cada una toca una capa distinta.
+
+El número de persona corresponde al número de área. Los nombres y los equipos de GitHub están en `Flujo_de_trabajo.md` §9.
 
 ## Fronteras explícitas
 
@@ -95,12 +97,13 @@ Cada dueño de módulo escribe el contrato de su módulo; la fila "Convención O
 
 ## Reglas de trabajo
 
-1. **Un módulo de backend, un dueño.** Nadie más escribe en `propietarios/`, `citas/` o `facturacion/`.
+1. **Un módulo de backend, un responsable de su corrección.** Es quien aprueba los cambios de `propietarios/`, `citas/` o `facturacion/` y quien responde cuando algo falla ahí. Cualquiera del equipo puede escribir en el módulo; **nadie más fusiona**.
 2. **Una superficie de UI, un dueño.** La persona 4 es dueña del design system; si un widget se usa dos veces, vive ahí y no se copia.
 3. **Lo transversal solo lo toca 1 o 5.** Si un dueño de módulo necesita cambiar seguridad o el compose, lo pide.
 4. **Contrato antes que código.** El dueño del módulo escribe el OpenAPI; la persona 1 lo revisa. Así la 1 no se vuelve cuello de botella.
 5. **Una pantalla piloto.** La persona 4 construye la pantalla de mascotas como referencia; las demás se replican sobre ese patrón.
 6. **Artefactos versionados.** El export del realm y las migraciones son archivos, no configuración oral.
+7. **Colaborar es escribir con revisión, no esperar turno.** Si el dueño no está, aplica la suplencia. Si no hay suplente, el trabajo espera y la persona 1 reasigna.
 
 ## Carga y riesgos
 
@@ -116,8 +119,29 @@ Riesgo principal: la persona 4 entrega los componentes tarde y las personas 2 y 
 
 El desbalance se vigila en la vista del tablero agrupada por responsable y filtrada a lo que no está cerrado. Quince minutos a la semana; si una columna crece dos semanas seguidas, se reasigna trabajo, no se espera.
 
-## Continuidad
+## Suplencias
 
-- Si el dueño de un área no está, el trabajo de su módulo **espera**; no lo toma otro por iniciativa propia. La persona 1 reasigna en el tablero si la espera compromete una fase.
-- Un cambio de dueño es una decisión explícita: se actualiza esta tabla, CODEOWNERS y las tarjetas abiertas, en el mismo PR.
-- La persona 1 es el único punto de revisión de arquitectura, y por eso no es dueña de módulos de negocio: si además escribiera `citas/`, revisaría su propio código.
+Una suplencia es temporal y no cambia el dueño: cambia quién escribe y quién aprueba mientras dure. Hoy solo el área 5 tiene suplente declarado; el resto sigue la regla de siempre — el trabajo espera, y la persona 1 reasigna si la espera compromete una fase.
+
+| Área | Dueño | Suplente | Cuándo entra |
+|---|---|---|---|
+| 5 Infraestructura, QA y seguridad | Persona 5 | Persona 1 | 7 días en *En curso* sin PR abierto ni avance comentado, o 5 días en *Listo* sin arrancar cuando bloquea la fase |
+| 1 a 4 | Su dueño | — | Solo si la persona 1 reasigna en el tablero |
+
+Los disparadores se miden sobre el tablero, no de memoria:
+
+1. Una tarjeta en *En curso* **más de 7 días sin PR abierto ni comentario de avance** pasa al suplente.
+2. Una tarjeta en *Listo* que **no arranca en 5 días hábiles y bloquea la fase** pasa al suplente.
+3. Los viernes se mira la vista *Por persona*. Si una columna crece dos semanas seguidas, se reasigna trabajo.
+
+La suplencia se activa **reasignando la tarjeta y comentando el motivo**. Nunca en silencio: el dueño tiene que poder leer por qué perdió la tarjeta. Al cerrarla, el área vuelve a su dueño.
+
+Mientras dure la suplencia la revisión va en sentido inverso: si escribe el suplente, aprueba el dueño. El equipo tiene dos miembros justamente para eso.
+
+Sin disparador no hay suplencia: la ausencia de un dueño no autoriza a nadie a escribir en un módulo ajeno por iniciativa propia.
+
+## Cambio de dueño
+
+Un cambio definitivo es otra cosa: se actualiza esta tabla, CODEOWNERS y las tarjetas abiertas, en el mismo PR.
+
+La persona 1 es el único punto de revisión de arquitectura, y por eso no es dueña de módulos de negocio: si además escribiera `citas/`, revisaría su propio código.
