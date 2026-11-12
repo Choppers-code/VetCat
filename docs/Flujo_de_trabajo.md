@@ -64,6 +64,8 @@ El pie `Refs #23` enlaza el commit con el issue. `Closes #23`, que va en el PR, 
 - El cuerpo completa la plantilla: qué cambia, issue, checklist de Definition of Done y riesgo.
 - No se fusiona con el CI en rojo ni con la revisión pedida pendiente.
 - Método de merge: **squash**. Deja un commit por issue y evita el ruido de las ramas.
+- **Tope de 400 líneas efectivas** — añadidas más borradas, sin contar archivos generados ni migraciones. Un PR más grande no se revisa de verdad: se parte antes de abrirlo.
+- **Nada de refactores de paso.** Si un archivo no aparece en el issue, no va en el PR. Un diff que toca cosas que nadie pidió se devuelve.
 
 ## 5. Lo que el repositorio impide
 
@@ -159,7 +161,22 @@ Vistas: `Tablero` (por estado), `Por persona` (carga real, filtrada a lo no cerr
 
 Cada área tiene dos miembros justamente para que nadie necesite aprobar su propio PR. Si el dueño no está, aprueba el otro miembro del equipo.
 
+**Suplencia.** Hoy solo el área 5 tiene suplente declarado: la persona 1 entra si la tarjeta lleva 7 días en *En curso* sin PR ni avance, o 5 días en *Listo* sin arrancar cuando bloquea la fase. Mientras dure, la revisión va en sentido inverso — si escribe la persona 1, aprueba la 5, y al revés. Las reglas completas están en `Equipo_responsabilidades.md`.
+
 Un PR que toque dos áreas necesita las dos aprobaciones. Si eso ocurre con frecuencia, el cambio está mal separado.
+
+### Qué mira una revisión
+
+Cuatro puntos, en este orden. Si uno falla, el PR se devuelve con el motivo escrito; no se arregla en un comentario al pasar.
+
+| Punto | Qué se comprueba |
+|---|---|
+| Contrato | El endpoint, el DTO o la migración dicen lo que dice el issue y lo que dice el OpenAPI del módulo |
+| Aislamiento y permisos | El `tenant_id` no sale de la petición, el `@PreAuthorize` está puesto y la prueba de un rol ajeno falla como debe |
+| Pruebas | Hay una prueba que falla sin el cambio. "No aplica" solo vale en documentación |
+| Nombres y sobre | Vocabulario en español, `{success, message, data}`, dinero sin `float`, sin lógica de negocio en el controlador |
+
+No se revisa el formato del código — eso lo hace el formateador — ni el estilo personal. Si para aprobar hay que reescribir el PR, el PR estaba mal separado.
 
 ## 10. Errores comunes
 
@@ -170,6 +187,7 @@ Un PR que toque dos áreas necesita las dos aprobaciones. Si eso ocurre con frec
 | El issue sigue abierto tras el merge | Falta `Closes #N` en el cuerpo del PR | Ciérralo a mano y no olvidarlo la próxima |
 | Los cambios aparecen en `develop` local sin querer | Commiteaste antes de crear la rama | `git switch -c feature/...` arrastra los cambios sin perderlos |
 | El PR tiene conflictos | `develop` avanzó mientras trabajabas | `git switch develop; git pull --ff-only; git switch -; git rebase develop` |
+| El PR tiene 900 líneas y nadie lo revisa | Se acumuló trabajo de varios días en una sola rama | Parte el issue antes de empezar; el tope es 400 líneas |
 
 ## 11. Antes de empezar el día
 
