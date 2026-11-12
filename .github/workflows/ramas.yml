@@ -1,0 +1,27 @@
+name: rama
+
+# El nombre de la rama es la única regla del flujo que se puede comprobar
+# sin código compilado: une el issue con la rama y el PR.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  nombre:
+    name: nombre de rama
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comprobar el formato
+        env:
+          RAMA: ${{ github.head_ref }}
+        run: |
+          if ! printf '%s' "$RAMA" | grep -Eq '^(feature|bugfix)/[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$|^hotfix/[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$|^release/[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::La rama '$RAMA' no sigue el formato feature/<issue>-<slug>."
+            echo "Créala con: .\\scripts\\nueva-rama.ps1 -Issue <n> -Slug <slug>"
+            echo "Ver docs/Flujo_de_trabajo.md §1."
+            exit 1
+          fi
+          echo "Rama correcta: $RAMA"

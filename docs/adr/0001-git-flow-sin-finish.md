@@ -1,4 +1,4 @@
-# ADR-001 · git flow para empezar, PR para terminar
+# ADR-0001 · git flow para empezar, PR para terminar
 
 | | |
 |---|---|
@@ -57,12 +57,14 @@ VetCat maneja expedientes clínicos, vacunas y dinero. Un fallo de aislamiento e
 
 ## Decisión
 
-1. **`git flow feature start <issue>-<slug>`** crea la rama. Es lo único que se usa de la herramienta.
+1. **`scripts/nueva-rama.ps1 -Issue <n> -Slug <slug>`** crea `feature/<n>-<slug>` desde `develop` actualizado. Es el camino por defecto porque viene en el clon: no hay que instalar nada. `git flow feature start <n>-<slug>` produce la misma rama y sigue siendo válido para quien lo tenga instalado.
 2. **`scripts/terminar-rama.ps1 -Issue <n>`** termina la rama: la sube, abre el PR contra `develop` si no existe, fusiona con squash, borra la rama y deja `develop` actualizado. El `Closes #<n>` sale del nombre de la rama.
 3. **`git flow feature finish` no se usa.** Tampoco `release finish` ni `hotfix finish`.
 4. **El ruleset no se toca.**
 
-El script se comporta como `finish` para quien lo usa —una orden, la rama desaparece, `develop` al día— pero el merge lo hace GitHub, con la aprobación y el CI delante. La implementación del script y del check de CI vive en el issue #27.
+El script se comporta como `finish` para quien lo usa —una orden, la rama desaparece, `develop` al día— pero el merge lo hace GitHub, con la aprobación y el CI delante.
+
+Que las ramas se creen con un script y no con una herramienta instalada a mano es parte de la misma decisión: lo que vive en el repositorio se puede exigir y se puede comprobar; lo que vive en cada máquina, no.
 
 ## Alternativas consideradas
 
@@ -70,7 +72,7 @@ El script se comporta como `finish` para quien lo usa —una orden, la rama desa
 |---|---|
 | git flow completo, con `finish` y push a `develop` | Exige permitir push directo a `develop`, quitar la aprobación obligatoria y el «sin bypass». CODEOWNERS deja de ejecutarse y el repositorio público pierde su razón de ser: se hizo público para tener protección de ramas gratis |
 | GitHub Flow puro, sin `develop` | Es válido para SaaS, pero cambia el modelo de releases por milestone que ya está documentado y en uso |
-| Sin `git flow`: `git switch -c` | Funciona igual. Se conserva `git flow start` porque el nombre de la rama sale bien sin memorizar el formato |
+| Sin `git flow`: `git switch -c` a mano | Funciona, pero el nombre de la rama depende de la memoria de cada uno. El script fija el formato sin instalar nada |
 | Un alias de git en vez de un script | Los alias viven en `.git/config`: no se versionan ni se comparten. El script sí |
 | Dejar `finish` y arreglar después | El estado roto es local y silencioso; el que lo sufre no sabe por qué su `push` falla |
 
@@ -109,7 +111,7 @@ git reflog | Select-String "feature/"
 |---|---|---|
 | Ruleset `ramas protegidas` | No hay push directo a `develop` ni a `main`, sin bypass | Activo |
 | CODEOWNERS | El PR pide revisión al equipo del área | Activo |
-| CI del nombre de rama | La rama se llama `feature/<issue>-<slug>` o el PR no pasa | Pendiente, #27 |
+| CI del nombre de rama | La rama se llama `feature/<issue>-<slug>` o el PR no pasa | Activo, `.github/workflows/ramas.yml` |
 
 ## Referencias
 

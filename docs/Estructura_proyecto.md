@@ -10,7 +10,7 @@ VetCat/
 │  ├─ CODEOWNERS                  quién revisa qué, por ruta
 │  ├─ ISSUE_TEMPLATE/             funcionalidad, ADR, error, mantenimiento
 │  ├─ pull_request_template.md    checklist de Definition of Done
-│  └─ workflows/                  CI (entra en la fase 1)
+│  └─ workflows/                  nombre de rama; compilación en la fase 1
 ├─ docs/
 │  ├─ Alcance.md  Roadmap.md  Decisiones_tecnicas.md
 │  ├─ Tecnologias_y_patrones.md  Equipo_responsabilidades.md
@@ -18,6 +18,10 @@ VetCat/
 │  ├─ adr/                        una decisión por archivo, numeradas
 │  ├─ api/v1/openapi.yaml         contrato publicado
 │  └─ historico/                  documentos v1, obsoletos
+├─ scripts/
+│  ├─ verificar-entorno.ps1       git, gh, docker, java y flutter
+│  ├─ nueva-rama.ps1              crea feature/<issue>-<slug> desde develop
+│  └─ terminar-rama.ps1           sube, abre el PR y fusiona con squash
 ├─ backend/
 │  ├─ src/main/java/com/vetcat/
 │  │  ├─ security/                Spring Security, filtros, `@PreAuthorize`   (área 1)
@@ -71,6 +75,7 @@ VetCat/
 | Un servicio del compose | `infrastructure/docker/compose.yaml` |
 | Un client o rol de Keycloak | `infrastructure/keycloak/realm-vetcat.json` |
 | Una decisión de arquitectura | `docs/adr/NNNN-titulo.md` |
+| Un script de ayuda del repositorio | `scripts/` |
 
 ## Carpetas con `.gitkeep`
 

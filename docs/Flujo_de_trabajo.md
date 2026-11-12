@@ -14,7 +14,7 @@ Cómo se mueve el trabajo en VetCat: del issue a la rama, de la rama al PR y del
 
 La rama por defecto del repositorio es **`develop`**. Un PR abierto desde la web apunta ahí, no a `main`. Es intencional: llegar a `main` exige pasar por un release.
 
-El porqué de este mapa, y por qué `git flow` se usa solo para crear ramas y no para fusionarlas, está en [`adr/ADR-001-git-flow-sin-finish.md`](adr/ADR-001-git-flow-sin-finish.md).
+El porqué de este mapa, y por qué `git flow` se usa solo para crear ramas y no para fusionarlas, está en [`adr/0001-git-flow-sin-finish.md`](adr/0001-git-flow-sin-finish.md).
 
 ## 2. El ciclo de un issue
 
@@ -26,20 +26,17 @@ El porqué de este mapa, y por qué `git flow` se usa solo para crear ramas y no
 6. Merge con *squash*. El issue se cierra y la tarjeta pasa a *Hecho*.
 
 ```powershell
-git switch develop
-git pull --ff-only
-git switch -c feature/23-empalme-consultorio
+.\scripts\nueva-rama.ps1 -Issue 23 -Slug empalme-consultorio
 
 # trabajo
 
 git add .
 git commit -m "feat(citas): bloquear empalme por consultorio" -m "Refs #23"
-git push -u origin feature/23-empalme-consultorio
 
-gh pr create --base develop `
-  --title "feat(citas): bloquear empalme por consultorio" `
-  --body "Closes #23"
+.\scripts\terminar-rama.ps1 -Issue 23
 ```
+
+El primer script crea la rama desde `develop` actualizado, igual que `git flow feature start`. El segundo sube, abre el PR con `Closes #23` y, cuando está aprobado, fusiona con squash y borra la rama: es el equivalente a `git flow feature finish`, con una diferencia — el merge lo hace GitHub. La primera vez que lo ejecutas solo abre el PR; la segunda, ya aprobado, fusiona. El porqué está en [`adr/0001-git-flow-sin-finish.md`](adr/0001-git-flow-sin-finish.md).
 
 ## 3. Commits
 
