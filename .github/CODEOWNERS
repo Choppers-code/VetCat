@@ -5,6 +5,7 @@
 /docs/                                            @Choppers-code/arquitectura
 /AGENTS.md                                        @Choppers-code/arquitectura
 /README.md                                        @Choppers-code/arquitectura
+/scripts/                                         @Choppers-code/arquitectura
 
 # ---------- Backend: arquitectura y transversal ----------
 /backend/build.gradle.kts                         @Choppers-code/infraestructura

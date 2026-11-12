@@ -14,9 +14,9 @@ Read, in this order:
 7. `docs/Estructura_proyecto.md` — folder layout and where each kind of code goes.
 8. `docs/Flujo_de_trabajo.md` — branches, commits, PRs, releases and the project board.
 
-`docs/Propuesta_VetCat.md` and `docs/Plan_inicial.md` are the original v1 documents and are **not** kept up to date. Where they conflict with the eight documents above, the eight above win.
+`docs/historico/Propuesta_VetCat.md` and `docs/historico/Plan_inicial.md` are the original v1 documents and are **not** kept up to date. Where they conflict with the eight documents above, the eight above win.
 
-Docs are written in Spanish. Keep new docs in Spanish under `docs/`; keep the planned layout (`backend/`, `frontend/`, `database/`, `infrastructure/{docker,keycloak,nginx}`, `docs/`) when scaffolding.
+Docs are written in Spanish. Keep new docs in Spanish under `docs/`; keep the planned layout (`backend/`, `frontend/`, `database/`, `infrastructure/{docker,keycloak,nginx}`, `docs/`, `scripts/`) when scaffolding.
 
 ## Planned stack (nothing built yet)
 
