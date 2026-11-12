@@ -41,6 +41,13 @@ Flutter app (Android first, mobile-first) + Flutter Web admin console → Keyclo
 - API: `/api/v1/...` with a uniform envelope — `{"success": bool, "message": str, "data": ...}` for both success and errors.
 - Git Flow: `main` and `develop` are protected; work on `feature/*` or `bugfix/*` branched from `develop`, merge by PR. `release/x.y.z`, `hotfix/*` from `main`.
 - Definition of Done: compiles, validates input, has tests, respects role permissions and tenant isolation, merged by PR, documented.
+- Backend layers are one-way: `controller → service → repository`. Controllers take and return DTOs, never entities; input is `@Valid`; no business logic in the controller.
+- DTOs are Java records named `<Entidad>Request` / `<Entidad>Response`, in Spanish, with no `Dto` suffix.
+- Errors: a single `@RestControllerAdvice` renders every exception as `{"success": false, "message": ..., "data": null}` with the right HTTP status. Never leak stack traces, SQL or internal class names.
+- Tests: JUnit 5 + Testcontainers against real PostgreSQL, one class per module. A bug fix starts with a failing test.
+- Do not add a library, a pattern or a naming scheme these docs don't have. If it is needed, open an issue for the architect — never decide it inside a feature PR.
+- Shared files have one owner and are never touched "while I'm here": `AGENTS.md`, `README.md`, `.github/`, build files, `docker-compose*.yml`, `database/`, `infrastructure/`. Change them in their own PR.
+- One PR, one issue, at most 400 effective lines (added + removed). More than that means it is not a single change.
 
 ## Scope guard
 
