@@ -1,0 +1,156 @@
+# Stack de desarrollo de VetCat.
+#
+#   1. Copy-Item infrastructure\docker\.env.example infrastructure\docker\.env
+#   2. docker compose -f infrastructure\docker\compose.yaml up -d
+#
+# Ningún valor de conexión, dominio ni credencial vive aquí: todo sale de `.env`,
+# que está ignorado por git. pgAdmin no arranca con `up -d`; se pide con
+# `--profile admin`. Ver docs/Despliegue_y_operacion.md §3 y §4.
+name: vetcat
+
+services:
+  postgres:
+    image: postgres:17.11-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      VETCAT_DB: ${VETCAT_DB}
+      VETCAT_DB_USER: ${VETCAT_DB_USER}
+      VETCAT_DB_PASSWORD: ${VETCAT_DB_PASSWORD}
+      KEYCLOAK_DB: ${KEYCLOAK_DB}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  # Crea los dos roles y las dos bases. Idempotente: se puede repetir sin
+  # volumen nuevo, a diferencia de un script de /docker-entrypoint-initdb.d.
+  postgres-init:
+    image: postgres:17.11-alpine
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_SUPERUSER}
+      PGPASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      VETCAT_DB: ${VETCAT_DB}
+      VETCAT_DB_USER: ${VETCAT_DB_USER}
+      VETCAT_DB_PASSWORD: ${VETCAT_DB_PASSWORD}
+      KEYCLOAK_DB: ${KEYCLOAK_DB}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    volumes:
+      - ./postgres/init.sql:/sql/init.sql:ro
+    command:
+      - sh
+      - -c
+      - >-
+        exec psql -v ON_ERROR_STOP=1 --dbname=postgres
+        -v vetcat_user="$$VETCAT_DB_USER" -v vetcat_password="$$VETCAT_DB_PASSWORD" -v vetcat_db="$$VETCAT_DB"
+        -v keycloak_user="$$KEYCLOAK_DB_USER" -v keycloak_password="$$KEYCLOAK_DB_PASSWORD" -v keycloak_db="$$KEYCLOAK_DB"
+        -f /sql/init.sql
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"
+      - "127.0.0.1:${KEYCLOAK_MANAGEMENT_PORT:-9002}:9000"
+    volumes:
+      # Solo lectura: el export del realm vive en el repositorio y se importa al
+      # arrancar. Sin usuarios y sin secretos (docs/Despliegue_y_operacion.md §12).
+      - ../keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q UP <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  rustfs:
+    image: rustfs/rustfs:1.0.5
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "127.0.0.1:${RUSTFS_PORT:-9000}:9000"
+      - "127.0.0.1:${RUSTFS_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - rustfsdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # Crea el bucket de adjuntos. Idempotente: si ya existe, no falla.
+  rustfs-init:
+    image: amazon/aws-cli:2.32.0
+    restart: "no"
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        aws --endpoint-url "$${S3_ENDPOINT}" s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null ||
+        aws --endpoint-url "$${S3_ENDPOINT}" s3api create-bucket --bucket "$${S3_BUCKET}"
+
+  pgadmin:
+    image: dpage/pgadmin4:9.8
+    restart: unless-stopped
+    profiles: ["admin"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      # Solo en la máquina del desarrollador: nunca se publica fuera
+      # (docs/Despliegue_y_operacion.md §1 y AGENTS.md).
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmindata:/var/lib/pgadmin
+
+volumes:
+  pgdata:
+  rustfsdata:
+  pgadmindata:
