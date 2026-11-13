@@ -1,0 +1,27 @@
+name: infra
+
+# El compose es lo único de la fase 1 que se puede comprobar sin código
+# compilado. Sin esto, "no se fusiona con el CI en rojo" no está garantizado
+# para nada (docs/Flujo_de_trabajo.md §4).
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/infra.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compose:
+    name: compose válido
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar el compose contra el ejemplo de variables
+        run: >-
+          docker compose
+          -f infrastructure/docker/compose.yaml
+          --env-file infrastructure/docker/.env.example
+          config -q
