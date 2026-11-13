@@ -79,20 +79,20 @@ Test-Herramienta -Nombre 'flutter' -Ejecutable 'flutter' -Argumentos @('--versio
 
 $java = Get-Command 'java' -ErrorAction SilentlyContinue
 if (-not $java) {
-    Add-Comprobacion 'java (JDK 21)' 'FALTA' 'instala Eclipse Temurin 21' $false
+    Add-Comprobacion 'java (JDK 25)' 'FALTA' 'instala Eclipse Temurin 25' $false
 } else {
     $salidaJava = @(& java -version 2>&1)
     $textoJava = ''
     if ($salidaJava.Count -gt 0) { $textoJava = "$($salidaJava[0])".Trim() }
     if ($textoJava -match '"(\d+)') {
         $mayor = [int]$Matches[1]
-        if ($mayor -ge 21) {
-            Add-Comprobacion 'java (JDK 21)' 'OK' $textoJava $false
+        if ($mayor -ge 25) {
+            Add-Comprobacion 'java (JDK 25)' 'OK' $textoJava $false
         } else {
-            Add-Comprobacion 'java (JDK 21)' 'VIEJO' "$textoJava — se necesita 21 o superior" $false
+            Add-Comprobacion 'java (JDK 25)' 'VIEJO' "$textoJava — se necesita 25 o superior" $false
         }
     } else {
-        Add-Comprobacion 'java (JDK 21)' 'OK' $textoJava $false
+        Add-Comprobacion 'java (JDK 25)' 'OK' $textoJava $false
     }
 }
 

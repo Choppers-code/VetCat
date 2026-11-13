@@ -1,6 +1,6 @@
 # Tecnologías y patrones de diseño
 
-Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las versiones exactas se fijan en la Fase 0 y se registran aquí.
+Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las versiones exactas están en §Versiones y las decide el ADR-0002.
 
 ## 1. Stack
 
@@ -9,24 +9,46 @@ Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las 
 | App móvil | Flutter (Dart) | Cliente principal en Android; iOS después | React Native: no reutiliza la consola web |
 | Consola web | Flutter Web | Administración de plataforma y de clínica | — |
 | Identidad | Keycloak, OIDC + PKCE | Login, JWT, roles | Autenticación propia: alto riesgo y mantenimiento |
-| Backend | Spring Boot 3 + Java LTS | API REST | Node/Nest: sin soporte equivalente de multi-tenancy en Hibernate |
-| Persistencia | Spring Data JPA + Hibernate 6 | ORM y resolución de tenant | JDBC puro: demasiado trabajo manual |
+| Backend | Spring Boot 4.1 + Java 25 | API REST | Node/Nest: sin soporte equivalente de multi-tenancy en Hibernate |
+| Build | Gradle con Kotlin DSL y wrapper | Compilación reproducible sin depender de la máquina | Maven: válido, pero `build.gradle.kts` ya está en CODEOWNERS |
+| Formato | Spotless con google-java-format; `dart format` | El formato lo aplica la herramienta, no el revisor | Revisar el estilo a mano |
+| Persistencia | Spring Data JPA + Hibernate 7.1 | ORM y resolución de tenant | JDBC puro: demasiado trabajo manual |
 | Base de datos | PostgreSQL 17 | Datos, `btree_gist`, restricciones de exclusión | MySQL: sin `EXCLUDE` |
 | Migraciones | Flyway | Versionado por esquema | Liquibase: más pesado para lo que se necesita |
-| Seguridad | Spring Security OAuth2 Resource Server | Validación de JWT y `@PreAuthorize` | — |
+| Seguridad | Spring Security 7, OAuth2 Resource Server | Validación de JWT y `@PreAuthorize` | — |
 | Contrato de API | springdoc OpenAPI | Documento que consumen app y consola | — |
 | Adjuntos | Almacenamiento compatible con S3 (MinIO en desarrollo) | Archivos fuera de las tablas | Binarios en la base de datos |
 | Orquestación | Docker Compose | Stack local y despliegue inicial | Kubernetes: fuera de alcance |
-| Pruebas | JUnit 5, Testcontainers, MockMvc, `flutter_test` | — | — |
+| Observabilidad | Micrometer con Prometheus y Grafana | Métricas y paneles de `Despliegue_y_operacion.md` §8 | — |
+| Arquitectura de código | ArchUnit | Una prueba vigila que las capas no se salten | Revisión manual |
+| Pruebas | JUnit 6, Testcontainers 2, MockMvc, `flutter_test` | — | — |
 | Distribución Android | APK firmado y Play Store | Entrega del cliente móvil | — |
 | Administración de BD | pgAdmin, solo desarrollo | — | — |
 | CI/CD | GitHub Actions | Build, pruebas, firma y publicación | — |
 
 ### Versiones
 
-- Se fijan en la Fase 0 y se registran en este documento y en el `README` del backend.
-- Java LTS y Spring Boot 3.x; Hibernate 6.x, que es la línea con soporte de multi-tenancy por esquema.
-- Keycloak y Flutter en su versión estable al iniciar; no se actualizan a mitad de fase.
+Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas también en el `README`. La regla de fondo: la versión la decide un ADR, nunca un PR de funcionalidad.
+
+| Pieza | Versión |
+|---|---|
+| Java | 25 (Temurin), con toolchain en el build |
+| Spring Boot | 4.1.x |
+| Spring Framework | 7.x |
+| Spring Security | 7.x |
+| Hibernate ORM | 7.1.x |
+| Jakarta EE | 11, Servlet 6.1 |
+| Jackson | 3 (`tools.jackson`) |
+| JUnit Jupiter | 6.x |
+| Testcontainers | 2.x |
+| springdoc | 3.x |
+| PostgreSQL | 17 |
+| Keycloak | la estable al arrancar la fase 1, fijada y registrada aquí |
+| Flutter | la estable al arrancar la fase 3, fijada y registrada aquí |
+
+- Las líneas de backend llegan con el BOM de Spring Boot 4.1; esta tabla recoge lo que hay que saber, no una lista de dependencias que se declare a mano.
+- Dentro de una línea se actualiza cuando hay parche de seguridad; entre líneas, nunca a mitad de fase.
+- Keycloak y Flutter se fijan igual, cada uno en su fase, y se registran en esta misma tabla.
 - El primer alcance no necesita macOS ni Xcode: iOS queda fuera hasta que existan Mac y cuenta de Apple Developer.
 
 ## 2. Patrones de backend

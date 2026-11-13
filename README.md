@@ -28,7 +28,7 @@ Antes de empezar, elige una tarjeta en *Listo* del [tablero](https://github.com/
 |---|---|---|
 | Git | 2.40 o superior | Siempre |
 | GitHub CLI | 2.40 o superior | Siempre: PR, issues y tablero |
-| JDK | 21, Temurin | Fase 2, backend |
+| JDK | 25, Temurin | Fase 2, backend |
 | Flutter | 3.x | Fase 3, app y consola web |
 | Docker Desktop | con Compose v2 | Fase 1, stack completo |
 
