@@ -64,6 +64,10 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.2
     restart: unless-stopped
+    # `start-dev` es deliberado y solo vale para local: sirve HTTP sin TLS y
+    # desactiva la comprobación estricta del hostname. En nube hace falta
+    # `start` con `KC_HOSTNAME` y TLS, y eso se configura en el PR de despliegue,
+    # no aquí: hoy no existe entorno de nube.
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres

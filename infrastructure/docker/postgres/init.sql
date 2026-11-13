@@ -24,6 +24,10 @@ SELECT format('CREATE DATABASE %I OWNER %I', :'vetcat_db', :'vetcat_user')
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'vetcat_db')
 \gexec
 
+-- Si la base ya existía con otro dueño, se corrige: el rol `vetcat` tiene que
+-- poder crear esquemas en ella aunque el volumen venga de un compose anterior.
+ALTER DATABASE :"vetcat_db" OWNER TO :"vetcat_user";
+
 -- Rol y base de Keycloak: los usuarios del realm también forman parte del
 -- respaldo de una clínica, así que no viven en el contenedor.
 SELECT format('CREATE ROLE %I LOGIN', :'keycloak_user')
@@ -35,3 +39,5 @@ ALTER ROLE :"keycloak_user" WITH LOGIN PASSWORD :'keycloak_password';
 SELECT format('CREATE DATABASE %I OWNER %I', :'keycloak_db', :'keycloak_user')
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'keycloak_db')
 \gexec
+
+ALTER DATABASE :"keycloak_db" OWNER TO :"keycloak_user";
