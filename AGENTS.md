@@ -22,7 +22,7 @@ Docs are written in Spanish. Keep new docs in Spanish under `docs/`; keep the pl
 
 ## Planned stack (nothing built yet)
 
-Flutter app (Android first, mobile-first) + Flutter Web admin console → Keycloak (OIDC public client + PKCE, one realm `vetcat`) → Spring Boot 3 REST → PostgreSQL 17, orchestrated with Docker Compose. Roles: `administrador_plataforma`, `administrador_clinica`, `veterinario`, `recepcionista`, `dueno`. Desktop and iOS are out of the first scope.
+Flutter app (Android first, mobile-first) + Flutter Web admin console → Keycloak (OIDC public client + PKCE, one realm `vetcat`) → Spring Boot 4.1 REST → PostgreSQL 17, orchestrated with Docker Compose. Roles: `administrador_plataforma`, `administrador_clinica`, `veterinario`, `recepcionista`, `dueno`. Desktop and iOS are out of the first scope.
 
 ## Non-negotiable architecture rules
 
@@ -46,7 +46,7 @@ Flutter app (Android first, mobile-first) + Flutter Web admin console → Keyclo
 - Backend layers are one-way: `controller → service → repository`. Controllers take and return DTOs, never entities; input is `@Valid`; no business logic in the controller.
 - DTOs are Java records named `<Entidad>Request` / `<Entidad>Response`, in Spanish, with no `Dto` suffix.
 - Errors: a single `@RestControllerAdvice` renders every exception as `{"success": false, "message": ..., "data": null}` with the right HTTP status. Never leak stack traces, SQL or internal class names.
-- Tests: JUnit 5 + Testcontainers against real PostgreSQL, one class per module. A bug fix starts with a failing test.
+- Tests: JUnit 6 + Testcontainers 2 against real PostgreSQL, one class per module. A bug fix starts with a failing test.
 - Do not add a library, a pattern or a naming scheme these docs don't have. If it is needed, open an issue for the architect — never decide it inside a feature PR.
 - Shared files have one owner and are never touched "while I'm here": `AGENTS.md`, `README.md`, `.github/`, build files, `infrastructure/docker/compose.yaml`, `database/`, `infrastructure/`. Change them in their own PR.
 - One PR, one issue, at most 400 effective lines (added + removed). More than that means it is not a single change.
