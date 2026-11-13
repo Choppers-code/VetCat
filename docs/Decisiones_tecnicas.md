@@ -22,7 +22,7 @@ Correcciones y definiciones que resuelven las contradicciones entre `historico/P
 - `catalogo.usuario_clinica (keycloak_id, clinica_id, rol, estado)` es la **única** fuente de verdad de la pertenencia. No vive dentro del esquema de la clínica, porque un usuario puede pertenecer a varias.
 - Un usuario puede trabajar en más de una clínica. Al iniciar sesión elige la clínica activa y recibe un token acotado a ella.
 - Ese token lo emite el backend, no Keycloak: `POST /api/v1/sesion/clinicas/{id}` valida la pertenencia en `usuario_clinica` y devuelve un token de tenant firmado por la API, de 15 minutos, con `sub`, `tenant_id` y el rol efectivo de **esa** clínica. El detalle, los dos validadores y las alternativas descartadas están en el [ADR-0003](adr/0003-token-por-clinica.md).
-- El token de identidad de Keycloak solo vale en `/api/v1/sesion/**`. Ningún endpoint de negocio lo acepta.
+- El token de identidad de Keycloak solo vale en `/api/v1/sesion/**` y `/api/v1/plataforma/**`. Ningún endpoint de negocio de una clínica lo acepta: sin `tenant_id` no hay esquema. `administrador_plataforma` es el único rol que se toma del realm, porque no pertenece a ninguna clínica.
 - Lo que no se negocia: el `tenant_id` llega en un token firmado y **el rol efectivo sale de `usuario_clinica` para esa clínica**, no del rol de realm. Un usuario que es administrador en la clínica A y recepcionista en la B no puede llevar el rol de A al token de B.
 - Keycloak: un solo realm `vetcat` con los roles como catálogo de valores, y la asignación por clínica en base de datos.
 

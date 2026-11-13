@@ -29,7 +29,7 @@ Hay una quinta que no está escrita en ningún documento y es la que decide el a
 1. **Identidad y autorización se separan.** Keycloak autentica y emite un token de identidad con el `sub`; el backend emite un **token de tenant** con lo que decide la autorización.
 2. `GET /api/v1/sesion/clinicas` devuelve las clínicas activas del usuario, leídas de `catalogo.usuario_clinica` con la unidad de persistencia **no** multi-tenant.
 3. `POST /api/v1/sesion/clinicas/{id}` valida que la relación exista y esté activa, y devuelve el token de tenant: firmado por la API, 15 minutos de vida, con `sub` (el `keycloak_id`), `tenant_id` (identificador interno de `catalogo.clinica`, nunca el nombre del esquema), el rol efectivo de **esa** clínica y un `jti`.
-4. **El token de identidad solo vale en `/api/v1/sesion/**`.** Ningún endpoint de negocio lo acepta: Spring Security monta dos validadores y enruta por `iss`.
+4. **El token de identidad solo vale para abrir sesión y para la plataforma.** `/api/v1/sesion/**` y `/api/v1/plataforma/**` se autorizan con el token de identidad; todo lo demás exige token de tenant. El motivo del segundo es que `administrador_plataforma` no pertenece a ninguna clínica —no tiene fila en `usuario_clinica`— y su trabajo empieza antes de que la clínica exista. Es el **único** rol que se toma del realm, y solo porque no es un rol por clínica.
 5. La clave de firma vive en el gestor de secretos, con `kid` desde el primer día para poder rotarla sin cortar sesiones.
 
 ## Consecuencias
@@ -52,12 +52,13 @@ Hay una quinta que no está escrita en ningún documento y es la que decide el a
 - Tomar el tenant de un parámetro, cuerpo o cabecera (ya vigente).
 - Copiar el rol de realm al token de tenant: el rol se lee de `usuario_clinica`.
 - Emitir un token de tenant sin `tenant_id`: si falta, el endpoint responde 401 en vez de resolver un esquema por defecto.
+- Dejar que el rol de plataforma abra datos de una clínica: con el token de identidad no hay `tenant_id`, y sin `tenant_id` no hay esquema que resolver.
 
 ## Cómo se hace cumplir
 
 | Mecanismo | Qué garantiza | Estado |
 |---|---|---|
-| Dos validadores enrutados por `iss` | Que el token de identidad no abre nada fuera de `sesion/` | Fase 3 |
+| Dos validadores enrutados por `iss` | Que el token de identidad no abre nada fuera de `sesion/` y `plataforma/` | Fase 3 |
 | Prueba de rol ajeno | Que el rol de la clínica A falla en la clínica B | Fase 3 |
 | Prueba de aislamiento con dos clínicas | Que una petición con token de la A nunca devuelve datos de la B | Fase 2 |
 
