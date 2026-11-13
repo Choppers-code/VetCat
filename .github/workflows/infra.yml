@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'infrastructure/**'
+      - 'database/**'
       - '.github/workflows/infra.yml'
 
 permissions:
@@ -19,9 +20,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validar el compose contra el ejemplo de variables
-        run: >-
-          docker compose
-          -f infrastructure/docker/compose.yaml
-          --env-file infrastructure/docker/.env.example
-          config -q
+      # `docker compose config` no falla cuando falta una variable: avisa,
+      # sustituye por vacío y sale con 0. Por eso se mira la salida además del
+      # código de salida; si no, el CI estaría verde con el contrato roto.
+      - name: Validar el compose y el contrato de variables
+        run: |
+          set -o pipefail
+          if ! salida=$(docker compose \
+              -f infrastructure/docker/compose.yaml \
+              --env-file infrastructure/docker/.env.example \
+              config -q 2>&1); then
+            echo "::error::El compose no se puede construir."
+            printf '%s\n' "$salida"
+            exit 1
+          fi
+          if printf '%s' "$salida" | grep -qi 'variable is not set'; then
+            echo "::error::.env.example no declara todas las variables que usa el compose."
+            printf '%s\n' "$salida"
+            exit 1
+          fi
+          echo "Compose válido y contrato de variables completo."
+
+      # `config` tampoco comprueba que el origen de un bind mount exista: si la
+      # carpeta se mueve, Docker la crea vacía y Flyway termina "sin migraciones".
+      - name: Comprobar que los montajes existen
+        run: |
+          montajes=$(docker compose \
+            -f infrastructure/docker/compose.yaml \
+            --env-file infrastructure/docker/.env.example \
+            config --format json |
+            jq -r '.services[].volumes[]? | select(.type == "bind") | .source')
+          echo "$montajes"
+          while IFS= read -r ruta; do
+            [ -z "$ruta" ] && continue
+            if [ ! -d "$ruta" ]; then
+              echo "::error::El compose monta '$ruta', que no existe."
+              exit 1
+            fi
+          done <<<"$montajes"
+          echo "Todos los montajes existen."
