@@ -42,8 +42,8 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | JUnit Jupiter | 6.x |
 | Testcontainers | 2.x |
 | springdoc | 3.x |
-| PostgreSQL | 17 |
-| Keycloak | la estable al arrancar la fase 1, fijada y registrada aquí |
+| PostgreSQL | 17.11, imagen `postgres:17.11-alpine` |
+| Keycloak | 26.8.2, imagen `quay.io/keycloak/keycloak:26.8.2` |
 | Flutter | la estable al arrancar la fase 3, fijada y registrada aquí |
 | RustFS (solo desarrollo) | 1.0.5, imagen `rustfs/rustfs:1.0.5` ([ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) |
 

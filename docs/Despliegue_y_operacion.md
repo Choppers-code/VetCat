@@ -23,13 +23,53 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | Aspecto | Local | Nube |
 |---|---|---|
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
-| `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:PUERTO/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
+| `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:8081/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
 | Adjuntos | RustFS en el compose ([ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) | Servicio compatible con S3 |
-| Migraciones | Contenedor one-shot antes de arrancar | El mismo contenedor, como job previo al despliegue |
+| Migraciones | `docker compose run --rm migraciones`, antes de arrancar la API | El mismo contenedor, como job previo al despliegue |
 | Logs | Consola | Recolectados y con retención |
 | Secretos | `.env` local, nunca en el repo | Gestor de secretos del proveedor |
 | App Android | APK de debug, URL `10.0.2.2` en emulador o IP de la LAN | APK firmado, URL pública |
 | Respaldos | `pg_dump` manual a carpeta local | Base backup + WAL + dump por esquema |
+
+**Variables de entorno.** El contrato completo está en `infrastructure/docker/.env.example`, que es la fuente de la tabla: si una variable no está en los dos sitios, uno de los dos está mal.
+
+| Variable | Desarrollo | Para qué |
+|---|---|---|
+| `POSTGRES_SUPERUSER` | `postgres` | Superusuario de la instancia; solo administración |
+| `POSTGRES_SUPERUSER_PASSWORD` | valor local | Contraseña del superusuario |
+| `POSTGRES_PORT` | `5432` | Puerto publicado de PostgreSQL en la máquina |
+| `VETCAT_DB` | `vetcat_db` | Base de la aplicación |
+| `VETCAT_DB_USER` | `vetcat` | Rol dueño de `vetcat_db`; lo usan la API y Flyway |
+| `VETCAT_DB_PASSWORD` | valor local | Contraseña de ese rol |
+| `KEYCLOAK_DB` | `keycloak_db` | Base del realm |
+| `KEYCLOAK_DB_USER` | `keycloak` | Rol dueño de `keycloak_db` |
+| `KEYCLOAK_DB_PASSWORD` | valor local | Contraseña de ese rol |
+| `KEYCLOAK_PORT` | `8080` | Puerto HTTP de Keycloak |
+| `KEYCLOAK_MANAGEMENT_PORT` | `9002` | Salud y métricas de Keycloak; 9000 es la API de RustFS |
+| `KEYCLOAK_ADMIN` | `admin` | Administrador del realm, para la consola de Keycloak |
+| `KEYCLOAK_ADMIN_PASSWORD` | valor local | Contraseña de ese administrador |
+| `RUSTFS_PORT` | `9000` | API compatible con S3 |
+| `RUSTFS_CONSOLE_PORT` | `9001` | Consola web de RustFS |
+| `RUSTFS_ACCESS_KEY` | valor local | Credencial S3 del backend |
+| `RUSTFS_SECRET_KEY` | valor local | Secreto S3 del backend |
+| `S3_ENDPOINT` | `http://rustfs:9000` | Endpoint S3 que resuelve el backend por nombre de servicio |
+| `S3_REGION` | `us-east-1` | Región que exige el SDK aunque el almacenamiento sea local |
+| `S3_BUCKET` | `vetcat-adjuntos` | Bucket de adjuntos |
+| `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
+| `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
+| `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
+
+**Puertos.** Todos se publican en `127.0.0.1`, nunca fuera de la máquina.
+
+| Servicio | Máquina | Contenedor | Nota |
+|---|---|---|---|
+| PostgreSQL | `POSTGRES_PORT` (5432) | 5432 | Si ya hay un PostgreSQL local escuchando, cambia la variable |
+| Keycloak | `KEYCLOAK_PORT` (8080) | 8080 | |
+| Keycloak, management | `KEYCLOAK_MANAGEMENT_PORT` (9002) | 9000 | Salud y métricas |
+| RustFS, API S3 | `RUSTFS_PORT` (9000) | 9000 | |
+| RustFS, consola | `RUSTFS_CONSOLE_PORT` (9001) | 9001 | |
+| pgAdmin | `PGADMIN_PORT` (5050) | 80 | Solo con `--profile admin` |
+| Consola Flutter Web | 8081 | — | Cuando exista; es el `redirect_uri` local de Keycloak |
 
 ## 4. Reglas de portabilidad
 
@@ -70,7 +110,7 @@ Restaurar una clínica requiere **cuatro** piezas, no una:
 
 | Entorno | Mecanismo |
 |---|---|
-| Local | `pg_dump` del esquema y copia del volumen de objetos, a una carpeta fuera del repo |
+| Local | `pg_dump` de `vetcat_db` y de `keycloak_db`, más copia del volumen de objetos, a una carpeta fuera del repo |
 | Nube | Base backup + archivado de WAL para desastre total; dump lógico por esquema para exportar o restaurar una clínica |
 
 - Los respaldos se cifran y no se guardan en el mismo host que la base.
