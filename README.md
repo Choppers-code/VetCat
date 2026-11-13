@@ -53,7 +53,7 @@ Antes de empezar, elige una tarjeta en *Listo* del [tablero](https://github.com/
 - **Las ramas se crean con un script**, no a mano: `.\scripts\nueva-rama.ps1 -Issue <n> -Slug <slug>`. El nombre sale siempre bien.
 - **Un issue, una rama, un PR.** El número del issue es lo que une el tablero con el código.
 - **CODEOWNERS decide quién revisa.** Cada paquete y cada carpeta tiene un dueño único.
-- Los mensajes de commit siguen Conventional Commits, con el módulo como scope: `feat(agenda): ...`.
+- Los mensajes de commit siguen Conventional Commits, con el módulo como scope: `feat(citas): ...`.
 
 ## Documentos originales
 

@@ -4,10 +4,14 @@
 
 .DESCRIPTION
     Hace lo mismo que `git flow feature start`, sin instalar nada:
-    cambia a develop, lo actualiza y crea feature/<issue>-<slug>.
+    cambia a develop, lo actualiza y crea feature/<issue>-<slug>,
+    o bugfix/<issue>-<slug> con -Bugfix.
 
 .EXAMPLE
     .\scripts\nueva-rama.ps1 -Issue 27 -Slug entorno-y-ramas
+
+.EXAMPLE
+    .\scripts\nueva-rama.ps1 -Issue 41 -Slug empalme-fantasma -Bugfix
 #>
 [CmdletBinding()]
 param(
@@ -16,6 +20,8 @@ param(
 
     [Parameter(Mandatory = $true, Position = 1)]
     [string]$Slug,
+
+    [switch]$Bugfix,
 
     [switch]$Forzar
 )
@@ -35,7 +41,8 @@ if ($Slug -notmatch '^[a-z0-9]+(-[a-z0-9]+)*$') {
     Fallar 'El slug solo admite minúsculas, números y guiones. Ejemplo: agenda-de-citas'
 }
 
-$rama = "feature/$Issue-$Slug"
+$tipo = if ($Bugfix) { 'bugfix' } else { 'feature' }
+$rama = "$tipo/$Issue-$Slug"
 
 if (-not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
     Fallar 'Falta GitHub CLI. Instálalo con: winget install GitHub.cli'

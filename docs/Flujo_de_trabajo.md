@@ -9,8 +9,11 @@ Cómo se mueve el trabajo en VetCat: del issue a la rama, de la rama al PR y del
 | `main` | — | — | Permanente. Solo recibe releases y hotfixes |
 | `develop` | `main` | — | Permanente. Integración de todo el trabajo |
 | `feature/<issue>-<slug>` | `develop` | `develop` | Hasta el merge |
+| `bugfix/<issue>-<slug>` | `develop` | `develop` | Hasta el merge |
 | `release/x.y.z` | `develop` | `main` y `develop` | Durante el corte de versión |
 | `hotfix/<issue>-<slug>` | `main` | `main` y `develop` | Hasta el parche |
+
+`feature/` es trabajo nuevo y `bugfix/` es la corrección de algo ya entregado; las dos nacen de `develop` y mueren en `develop`. `hotfix/` es otra cosa: el parche que sale de `main` porque lo roto está en producción.
 
 La rama por defecto del repositorio es **`develop`**. Un PR abierto desde la web apunta ahí, no a `main`. Es intencional: llegar a `main` exige pasar por un release.
 
@@ -52,7 +55,7 @@ Formato: `tipo(scope): descripción en español`.
 | `chore` | Configuración, dependencias, infraestructura |
 | `perf` | Mejora de rendimiento |
 
-El `scope` es el módulo: `citas`, `pacientes`, `tenancy`, `facturacion`, `frontend`, `docker`.
+El `scope` es el paquete del módulo, no el nombre del área: `propietarios`, `mascotas`, `expediente`, `citas`, `vacunas`, `facturacion`, `portal`, `plataforma`, `tenancy`, `frontend`, `docker`.
 
 El pie `Refs #23` enlaza el commit con el issue. `Closes #23`, que va en el PR, es lo que lo cierra al fusionar.
 
