@@ -18,7 +18,7 @@ Read, in this order:
 
 `docs/historico/Propuesta_VetCat.md` and `docs/historico/Plan_inicial.md` are the original v1 documents and are **not** kept up to date. Where they conflict with the eight documents above, the eight above win.
 
-Docs are written in Spanish. Keep new docs in Spanish under `docs/`; keep the planned layout (`backend/`, `frontend/`, `database/`, `infrastructure/{docker,keycloak,nginx}`, `docs/`, `scripts/`) when scaffolding.
+Docs are written in Spanish. Keep new docs in Spanish under `docs/`; keep the planned layout (`backend/`, `frontend/`, `database/`, `infrastructure/{docker,keycloak}`, `docs/`, `scripts/`) when scaffolding.
 
 ## Planned stack (nothing built yet)
 
@@ -48,7 +48,7 @@ Flutter app (Android first, mobile-first) + Flutter Web admin console → Keyclo
 - Errors: a single `@RestControllerAdvice` renders every exception as `{"success": false, "message": ..., "data": null}` with the right HTTP status. Never leak stack traces, SQL or internal class names.
 - Tests: JUnit 5 + Testcontainers against real PostgreSQL, one class per module. A bug fix starts with a failing test.
 - Do not add a library, a pattern or a naming scheme these docs don't have. If it is needed, open an issue for the architect — never decide it inside a feature PR.
-- Shared files have one owner and are never touched "while I'm here": `AGENTS.md`, `README.md`, `.github/`, build files, `docker-compose*.yml`, `database/`, `infrastructure/`. Change them in their own PR.
+- Shared files have one owner and are never touched "while I'm here": `AGENTS.md`, `README.md`, `.github/`, build files, `infrastructure/docker/compose.yaml`, `database/`, `infrastructure/`. Change them in their own PR.
 - One PR, one issue, at most 400 effective lines (added + removed). More than that means it is not a single change.
 
 ## Scope guard
