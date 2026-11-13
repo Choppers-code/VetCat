@@ -44,6 +44,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 ## 5. Migraciones
 
 - Un contenedor one-shot aplica Flyway antes de levantar la API. La API nunca migra.
+- **Un esquema nuevo no espera a la siguiente ventana.** El aprovisionamiento de la clínica crea el esquema y lo deja en la tabla de estado como pendiente; el runner, que se puede lanzar a demanda, aplica las migraciones a todo tenant pendiente o desactualizado. Que la API no migre no significa que el alta de una clínica se quede sin esquema hasta el próximo despliegue.
 - Regla **expand/contract**: toda migración debe ser compatible con la versión anterior de la app, porque durante el despliegue conviven ambas.
 - El esquema de catálogo se migra una vez; los esquemas de clínica se migran en bucle, con una tabla de estado por tenant para saber cuáles van y reintentar los que fallen.
 - Política de **roll-forward**: si una migración falla a mitad, se corrige y se vuelve a aplicar. El rollback de la imagen anterior solo es seguro si la migración fue expand-only.
@@ -87,7 +88,7 @@ Restaurar una clínica requiere **cuatro** piezas, no una:
 
 - Runbook mínimo: base de datos caída, Keycloak caído, restauración de una clínica, migración fallida, certificado vencido.
 - Un canal único de incidentes y un responsable de guardia, aunque sea informal.
-- El acceso de soporte a datos clínicos, si se permite, es temporal, autorizado por la clínica, con motivo y registrado en auditoría.
+- El soporte no accede a datos clínicos. `administrador_plataforma` trabaja sobre configuración, metadatos y disponibilidad, y esa prohibición no tiene excepción por incidente: ver `Decisiones_tecnicas.md` §4. Lo que sí queda en auditoría es cada acceso de soporte a la configuración de una clínica.
 
 ## 10. Checklist para subir a nube
 

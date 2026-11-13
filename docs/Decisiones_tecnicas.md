@@ -8,7 +8,7 @@ Correcciones y definiciones que resuelven las contradicciones entre `historico/P
 - **Dos unidades de persistencia**: una sin multi-tenant para `catalogo`, otra con `CurrentTenantIdentifierResolver` y `MultiTenantConnectionProvider` para los esquemas de clínica. Mezclar entidades globales y de tenant en una sola unidad es la parte más frágil de esta fase.
 - El nombre del esquema lo genera el servidor a partir de un identificador interno. Nunca lo envía el cliente.
 - `catalogo.clinica` incluye `zona_horaria` en formato IANA. Los horarios de atención y el cálculo de disponibilidad se hacen en esa zona; todo instante se guarda como `timestamptz` y las fechas sin hora como `date`.
-- Flyway con dos ubicaciones de migración: `catalogo` y `tenant`. El aprovisionamiento de una clínica es idempotente: registra en el catálogo, crea el esquema, aplica las migraciones y registra al administrador en Keycloak, con estados persistidos y un job de reconciliación si un paso falla.
+- Flyway con dos ubicaciones de migración: `catalogo` y `tenant`. El aprovisionamiento de una clínica es idempotente: registra en el catálogo, crea el esquema **vacío**, lo deja en la tabla de estado como pendiente de migrar y registra al administrador en Keycloak, con estados persistidos y un job de reconciliación si un paso falla. Quien aplica Flyway es siempre el runner one-shot, nunca la API: ver `Despliegue_y_operacion.md` §5.
 
 ## 2. El tenant sale solo del token
 
@@ -76,12 +76,16 @@ ALTER TABLE cita
   ALTER COLUMN estado SET NOT NULL,
   ALTER COLUMN tipo SET NOT NULL,
   ALTER COLUMN veterinario_id SET NOT NULL,
+  ALTER COLUMN inicio SET NOT NULL,
+  ALTER COLUMN fin SET NOT NULL,
   ADD CONSTRAINT cita_rango_valido CHECK (fin > inicio),
   ADD CONSTRAINT cita_consultorio_requerido
     CHECK (tipo <> 'CONSULTORIO' OR consultorio_id IS NOT NULL),
   ADD CONSTRAINT cita_consultorio_no_aplica
     CHECK (tipo <> 'DOMICILIO' OR consultorio_id IS NULL);
 ```
+
+- `inicio` y `fin` van `NOT NULL` por la misma razón que las otras tres: `fin > inicio` no detecta un nulo —evalúa a `NULL` y la restricción pasa— y una cita con `inicio` nulo deja el rango abierto por abajo, con lo que bloquea la agenda entera de ese veterinario. No es una fuga de datos, es la agenda de una clínica caída por una fila.
 
 - Un `SELECT` previo no basta: dos recepcionistas pueden reservar a la vez. El rechazo de la base se traduce en un `409` que la app muestra como conflicto de horario.
 - Se agregan `consultorio`, `horario_atencion` (por veterinario y por consultorio, con excepciones por fecha), `bloqueo_agenda` y la duración por servicio en el catálogo de conceptos.
@@ -137,9 +141,6 @@ ALTER TABLE cita
 
 ## Pendiente de confirmar
 
-1. Mecanismo de emisión del token por clínica (ADR).
-2. Matriz de roles por acción (`docs/Matriz_roles.md`).
-3. Facturación fiscal (CFDI o equivalente) y su proveedor.
-4. Notificaciones push.
-5. Uso sin conexión.
-6. Fase de inventario.
+1. Facturación fiscal (CFDI o equivalente) y su proveedor.
+2. Notificaciones push.
+3. Fase de inventario.
