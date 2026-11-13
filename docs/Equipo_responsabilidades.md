@@ -65,6 +65,7 @@ El documento dice de quién es cada cosa; estos dos mecanismos lo ejecutan.
 | Repositorio, Git Flow, convenciones | R | | | | A |
 | Convención OpenAPI y sobre de respuesta | R | A | A | A | |
 | Seguridad backend y resolver de tenant | R | | | | A |
+| Matriz de roles por acción | R | A | A | A | |
 | Keycloak: realm, clientes, export | A | | | A | R |
 | Docker, redes, volúmenes | | | | | R |
 | PostgreSQL, extensiones, respaldos | A | | | | R |

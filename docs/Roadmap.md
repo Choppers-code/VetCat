@@ -4,7 +4,7 @@ Cada fase termina con algo ejecutable y demostrable. Las versiones marcan cortes
 
 | Fase | Entrega | Versión |
 |---|---|---|
-| 0 | Repositorio, Git Flow, contratos OpenAPI, ADRs, convenciones | — |
+| 0 | Repositorio, Git Flow, contratos OpenAPI, ADRs, convenciones y matriz de roles | — |
 | 1 | Compose parametrizado por entorno: PostgreSQL 17, Keycloak, pgAdmin, almacenamiento de adjuntos. Primer entorno: máquina del desarrollador | — |
 | 2 | Multi-tenancy: catálogo global, esquema por clínica, aprovisionamiento | — |
 | 3 | Autenticación y autorización: Keycloak, roles, clínica activa | — |
