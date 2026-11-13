@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HorarioConsultorioRepository extends JpaRepository<HorarioConsultorio, UUID> {
 
+    List<HorarioConsultorio> findByConsultorio_IdOrderByDiaSemanaAscFechaExcepcionAscHoraInicioAsc(
+            UUID consultorioId);
+
     List<HorarioConsultorio> findByConsultorio_IdAndFechaExcepcionIsNullAndDiaSemanaOrderByHoraInicio(
             UUID consultorioId,
             Integer diaSemana);
