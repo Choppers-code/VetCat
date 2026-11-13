@@ -53,7 +53,7 @@ jobs:
           echo "$montajes"
           while IFS= read -r ruta; do
             [ -z "$ruta" ] && continue
-            if [ ! -d "$ruta" ]; then
+            if [ ! -e "$ruta" ]; then
               echo "::error::El compose monta '$ruta', que no existe."
               exit 1
             fi
