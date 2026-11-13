@@ -13,6 +13,7 @@ Correcciones y definiciones que resuelven las contradicciones entre `historico/P
 ## 2. El tenant sale solo del token
 
 - `tenant_id` proviene exclusivamente del JWT firmado y se valida contra la relación usuario-clínica en base de datos. Nunca de un parámetro, cuerpo o cabecera.
+- **Si no hay tenant, no hay respuesta.** Un token sin `tenant_id`, o con una clínica que no figura activa en `usuario_clinica`, se rechaza con `401` o `403`. Nunca se resuelve un esquema por defecto: aquí el silencio no es un valor neutro, significa leer datos de otra clínica.
 - La resolución es por conexión y transacción. **Ningún bean singleton guarda el tenant actual**; un campo compartido cruza datos entre clínicas bajo concurrencia.
 - Los servicios son sin estado, con inyección por constructor.
 - El contexto de tenant se limpia en un `finally` al devolver la conexión, se prohíbe la caché de segundo nivel de Hibernate y los jobs (`@Async`, `@Scheduled`) reciben el tenant explícitamente, nunca lo heredan del hilo.
@@ -33,7 +34,7 @@ Roles: `administrador_plataforma`, `administrador_clinica`, `veterinario`, `rece
 - `recepcionista` gestiona agenda, propietarios y mascotas; **no** accede a datos clínicos ni registra vacunas.
 - `dueno` solo lectura de lo suyo, con campos explícitamente permitidos, y el backend verifica la propiedad de la mascota en **cada** consulta.
 
-La matriz completa de acciones por rol se aprueba antes de escribir el primer `@PreAuthorize` y vive en `docs/Matriz_roles.md`.
+La matriz completa de acciones por rol vive en [`docs/Matriz_roles.md`](Matriz_roles.md) y se implementa tal cual: lo que no figura en ella no se escribe con `@PreAuthorize`.
 
 ## 5. Agenda: el empalme lo impide la base de datos
 
