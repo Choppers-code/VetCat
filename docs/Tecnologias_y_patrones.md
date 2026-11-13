@@ -55,8 +55,10 @@ Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las 
 | Rutas | go_router | Navigator 2.0 a mano |
 | HTTP | dio | `http` |
 | Modelos y serialización | freezed + json_serializable | Escritura manual |
-| Autenticación OIDC | flutter_appauth | openid_client |
-| Almacenamiento de tokens | flutter_secure_storage | `shared_preferences`, no recomendado |
+| Autenticación OIDC (móvil) | flutter_appauth | `openid_client`, que no abre el navegador del sistema como exige el flujo |
+| Autenticación OIDC (consola web) | openid_client | Adaptador JS de Keycloak: script externo y globales |
+| Almacenamiento de tokens (móvil) | flutter_secure_storage — Keychain y Keystore | `shared_preferences`, no recomendado |
+| Almacenamiento de tokens (consola web) | memoria, sin persistencia: recargar reautentica | `localStorage`: cualquier XSS lo lee |
 
 Reglas asociadas:
 
@@ -64,6 +66,8 @@ Reglas asociadas:
 - Un interceptor único adjunta el token, refresca la sesión y traduce el sobre `{success, message, data}`.
 - Las guardas de ruta ocultan pantallas por rol, pero **no autorizan**: el backend decide.
 - Un widget usado dos veces vive en el design system, no se copia.
+- La app y la consola comparten la interfaz de sesión, no la implementación: `flutter_appauth` en móvil y `openid_client` en el navegador (ADR-0004).
+- En el navegador los tokens viven en memoria y CORS se abre solo al origen de la consola, nunca con `*` ni con credenciales.
 
 ## 4. Reglas de datos
 

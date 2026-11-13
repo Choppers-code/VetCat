@@ -23,7 +23,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | Aspecto | Local | Nube |
 |---|---|---|
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
-| `redirect_uri` de Keycloak | `http://localhost:PUERTO/*` | `https://dominio/*` |
+| `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:PUERTO/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
 | Adjuntos | MinIO en el compose | Servicio compatible con S3 |
 | Migraciones | Contenedor one-shot antes de arrancar | El mismo contenedor, como job previo al despliegue |
 | Logs | Consola | Recolectados y con retención |
