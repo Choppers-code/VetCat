@@ -55,7 +55,7 @@ Flutter app (Android first, mobile-first) + Flutter Web admin console → Keyclo
 
 In scope: clinics/tenants, agenda, owners & pets, clinical records, vaccines, owner portal, billing with point of sale, platform administration. Mobile app is the primary client.
 
-Out of scope: desktop app, inventory/stock control, WhatsApp/SMS notifications. Billing is **internal receipts**; fiscal invoicing (CFDI or equivalent) is a separate phase. Push notifications and offline mode are undecided — don't add them unasked.
+Out of scope: desktop app, inventory/stock control, WhatsApp/SMS notifications. Billing is **internal receipts**; fiscal invoicing (CFDI or equivalent) is a separate phase. Push notifications are undecided - don't add them unasked. Offline mode is decided: out of this delivery, so no offline writes, only a read cache and retry.
 
 ## Environment
 

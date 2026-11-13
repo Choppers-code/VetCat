@@ -31,7 +31,7 @@ La app de escritorio queda descartada.
 | Expediente clínico | Consultas, diagnósticos, tratamientos, recetas, notas y adjuntos |
 | Vacunas | Catálogo, aplicaciones, próxima dosis, vencidas y próximas |
 | Portal del dueño | Sus mascotas, citas, cartilla y resumen clínico autorizado |
-| Facturación y caja | Catálogo de conceptos, venta en mostrador, pagos, comprobante, folio por clínica |
+| Facturación y caja | Catálogo de conceptos, venta en mostrador, pagos, comprobante, folio por clínica y turno de caja con apertura, cierre y arqueo |
 | Administración de plataforma | Alta y baja de clínicas, soporte, monitoreo |
 
 ## Fuera de alcance
@@ -42,6 +42,7 @@ La app de escritorio queda descartada.
 | App iOS en el primer alcance | Requiere Mac, Xcode y cuenta de Apple Developer; se incorpora después |
 | Inventario | Existencias, lotes, caducidad y proveedores van en fase posterior. El catálogo de conceptos se diseña para engancharlo sin migrar datos |
 | Notificaciones WhatsApp/SMS | Las alertas de vacunas son dentro de la aplicación |
+| Uso sin conexión | No en esta entrega: solo caché de lectura y reintento (`Decisiones_tecnicas.md` §9). Si se retoma, es una fase propia |
 | Facturación fiscal (CFDI o equivalente) | Fuera por ahora: v1.2 emite comprobante interno; la integración fiscal sería una fase aparte |
 
 ## Decisiones de alcance
@@ -62,4 +63,3 @@ El detalle de entornos, migraciones, respaldos y checklist de subida está en [D
 ## Pendiente de confirmar
 
 1. Si se agregan notificaciones push.
-2. Si se soporta uso sin conexión en la app móvil (la recomendación es que no en esta entrega).
