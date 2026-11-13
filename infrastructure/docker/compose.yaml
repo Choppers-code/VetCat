@@ -65,9 +65,13 @@ services:
   # `docker compose run --rm migraciones`, y la API nunca migra
   # (docs/Despliegue_y_operacion.md §5).
   migraciones:
-    image: flyway/flyway:11.14-alpine
+    image: flyway/flyway:11.14.1-alpine
     restart: "no"
     command: ["migrate"]
+    # Con perfil, `up -d` no lo arranca: solo corre cuando se pide con
+    # `docker compose run --rm migraciones`. Si fallara dentro de `up -d`, el
+    # stack quedaría arriba con la base sin migrar y el error escondido.
+    profiles: ["migraciones"]
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -76,11 +80,13 @@ services:
       FLYWAY_USER: ${VETCAT_DB_USER}
       FLYWAY_PASSWORD: ${VETCAT_DB_PASSWORD}
       FLYWAY_SCHEMAS: catalogo
-      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      # La ubicación de tenant llega con el bucle de migración por clínica
+      # (fase 2); hoy solo existe la del catálogo.
+      FLYWAY_LOCATIONS: filesystem:/flyway/catalogo
       FLYWAY_CREATE_SCHEMAS: "true"
       FLYWAY_CONNECT_RETRIES: "10"
     volumes:
-      - ../../database/migrations/catalogo:/flyway/sql:ro
+      - ../../database/migrations/catalogo:/flyway/catalogo:ro
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.2
