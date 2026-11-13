@@ -30,7 +30,8 @@ Cada fase termina con algo ejecutable y demostrable. Las versiones marcan cortes
 
 | Hito | Criterio |
 |---|---|
-| H1 | Todo el equipo levanta el stack con `docker compose up -d` e inicia sesión |
+| H1a | Todo el equipo levanta el stack con `docker compose up -d` y ve los servicios en `healthy` (fase 1) |
+| H1b | Un usuario del realm `vetcat` entra y obtiene token (fase 3) |
 | H2 | Dos clínicas de prueba con datos aislados y acceso cruzado denegado |
 | H3 | v1.0: agenda, propietarios, mascotas, expediente y vacunas funcionando en la app |
 | H4 | v1.1: el dueño consulta sus mascotas, citas y vacunas |
