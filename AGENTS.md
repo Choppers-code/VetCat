@@ -2,7 +2,9 @@
 
 ## Repo state (read this first)
 
-Docs-only. No application code, no build config, no CI, and **not a git repo** — do not assume branches, `develop`, or a scaffold exist, and don't `git init` unless asked.
+Planning stage. The repo is a git repository on GitHub (`Choppers-code/VetCat`) with `main` and `develop` (default) branches, the planned folder scaffold (empty folders with `.gitkeep`), `.github/` (CODEOWNERS, issue/PR templates, branch-name CI in `workflows/ramas.yml`) and PowerShell scripts in `scripts/` (`verificar-entorno.ps1`, `nueva-rama.ps1`, `terminar-rama.ps1`). There is still no application code and no build config.
+
+Branches are created with `scripts/nueva-rama.ps1 -Issue <n> -Slug <slug>` (`feature/<issue>-<slug>`) and finished with a PR; never `git flow feature finish` (see `docs/adr/0001-git-flow-sin-finish.md`).
 
 Read, in this order:
 1. `docs/Alcance.md` — what is built and what is explicitly not.
