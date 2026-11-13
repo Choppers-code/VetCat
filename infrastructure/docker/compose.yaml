@@ -61,6 +61,27 @@ services:
         -v keycloak_user="$$KEYCLOAK_DB_USER" -v keycloak_password="$$KEYCLOAK_DB_PASSWORD" -v keycloak_db="$$KEYCLOAK_DB"
         -f /sql/init.sql
 
+  # Aplica las migraciones del catálogo. No arranca con `up -d`: se ejecuta con
+  # `docker compose run --rm migraciones`, y la API nunca migra
+  # (docs/Despliegue_y_operacion.md §5).
+  migraciones:
+    image: flyway/flyway:11.14-alpine
+    restart: "no"
+    command: ["migrate"]
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${VETCAT_DB}
+      FLYWAY_USER: ${VETCAT_DB_USER}
+      FLYWAY_PASSWORD: ${VETCAT_DB_PASSWORD}
+      FLYWAY_SCHEMAS: catalogo
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_CREATE_SCHEMAS: "true"
+      FLYWAY_CONNECT_RETRIES: "10"
+    volumes:
+      - ../../database/migrations/catalogo:/flyway/sql:ro
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.2
     restart: unless-stopped
