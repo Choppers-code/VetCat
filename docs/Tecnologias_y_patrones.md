@@ -17,7 +17,7 @@ Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las 
 | Migraciones | Flyway | Versionado por esquema | Liquibase: más pesado para lo que se necesita |
 | Seguridad | Spring Security 7, OAuth2 Resource Server | Validación de JWT y `@PreAuthorize` | — |
 | Contrato de API | springdoc OpenAPI | Documento que consumen app y consola | — |
-| Adjuntos | Almacenamiento compatible con S3 (MinIO en desarrollo) | Archivos fuera de las tablas | Binarios en la base de datos |
+| Adjuntos | Almacenamiento compatible con S3 (RustFS en desarrollo, [ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) | Archivos fuera de las tablas | Binarios en la base de datos |
 | Orquestación | Docker Compose | Stack local y despliegue inicial | Kubernetes: fuera de alcance |
 | Observabilidad | Micrometer con Prometheus y Grafana | Métricas y paneles de `Despliegue_y_operacion.md` §8 | — |
 | Arquitectura de código | ArchUnit | Una prueba vigila que las capas no se salten | Revisión manual |
@@ -45,6 +45,7 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | PostgreSQL | 17 |
 | Keycloak | la estable al arrancar la fase 1, fijada y registrada aquí |
 | Flutter | la estable al arrancar la fase 3, fijada y registrada aquí |
+| RustFS (solo desarrollo) | 1.0.5, imagen `rustfs/rustfs:1.0.5` ([ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) |
 
 - Las líneas de backend llegan con el BOM de Spring Boot 4.1; esta tabla recoge lo que hay que saber, no una lista de dependencias que se declare a mano.
 - Dentro de una línea se actualiza cuando hay parche de seguridad; entre líneas, nunca a mitad de fase.
@@ -114,5 +115,5 @@ Reglas asociadas:
 ## 6. Decisiones abiertas
 
 1. Versiones exactas del stack, a fijar en la Fase 0.
-2. Proveedor de almacenamiento en producción (S3, MinIO u otro compatible).
+2. Proveedor de almacenamiento en producción (S3 u otro servicio compatible). En desarrollo ya está decidido: RustFS, ADR-0005.
 3. Si la facturación fiscal requiere un proveedor externo de timbrado.
