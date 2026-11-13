@@ -24,7 +24,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 |---|---|---|
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
 | `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:PUERTO/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
-| Adjuntos | MinIO en el compose | Servicio compatible con S3 |
+| Adjuntos | RustFS en el compose ([ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) | Servicio compatible con S3 |
 | Migraciones | Contenedor one-shot antes de arrancar | El mismo contenedor, como job previo al despliegue |
 | Logs | Consola | Recolectados y con retención |
 | Secretos | `.env` local, nunca en el repo | Gestor de secretos del proveedor |
@@ -37,7 +37,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 2. **Sin estado en el contenedor.** Lo único persistente son los volúmenes de PostgreSQL y del almacenamiento de objetos.
 3. **Logs a `stdout`.** Nada escribe archivos de log propios.
 4. **Sin `localhost` en la configuración por defecto de producción.** Las URLs internas se resuelven por nombre de servicio del compose.
-5. **Almacenamiento de adjuntos detrás de una interfaz.** MinIO local y S3 en nube comparten la misma abstracción.
+5. **Almacenamiento de adjuntos detrás de una interfaz.** RustFS en local y S3 en nube comparten la misma abstracción: el backend solo habla la API S3.
 6. **Migraciones como job, no al arrancar la API.** Con varias réplicas, `spring.flyway` al inicio duplica trabajo y compite.
 7. **Healthchecks reales.** `liveness` y `readiness` separados, y `depends_on: condition: service_healthy` en compose.
 
