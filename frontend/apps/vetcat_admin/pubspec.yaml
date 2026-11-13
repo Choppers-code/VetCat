@@ -1,0 +1,24 @@
+name: vetcat_admin
+description: Consola web de administración de VetCat.
+version: 0.0.1+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.2
+  flutter: ">=3.47.2 <3.48.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  vetcat_core:
+    path: ../../packages/core
+  vetcat_ui:
+    path: ../../packages/ui
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
