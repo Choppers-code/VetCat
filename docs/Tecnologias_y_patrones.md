@@ -47,7 +47,6 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | Keycloak | 26.8.2, imagen `quay.io/keycloak/keycloak:26.8.2` |
 | Flutter | la estable al arrancar la fase 3, fijada y registrada aquí |
 | Correo de pruebas (solo desarrollo) | la estable al arrancar la fase 1, fijada y registrada aquí |
-| RustFS (solo desarrollo; se retira) | 1.0.5, imagen `rustfs/rustfs:1.0.5`. El [ADR-0009](adr/0009-sin-almacenamiento-de-objetos.md) reemplaza al [ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md); sale del compose en un cambio de infraestructura aparte |
 
 - Las líneas de backend llegan con el BOM de Spring Boot 4.1; esta tabla recoge lo que hay que saber, no una lista de dependencias que se declare a mano.
 - Dentro de una línea se actualiza cuando hay parche de seguridad; entre líneas, nunca a mitad de fase.

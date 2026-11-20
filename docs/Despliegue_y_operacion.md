@@ -45,21 +45,12 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `KEYCLOAK_DB_USER` | `keycloak` | Rol dueño de `keycloak_db` |
 | `KEYCLOAK_DB_PASSWORD` | valor local | Contraseña de ese rol |
 | `KEYCLOAK_PORT` | `8080` | Puerto HTTP de Keycloak |
-| `KEYCLOAK_MANAGEMENT_PORT` | `9002` | Salud y métricas de Keycloak; 9000 es la API de RustFS |
+| `KEYCLOAK_MANAGEMENT_PORT` | `9002` | Salud y métricas de Keycloak |
 | `KEYCLOAK_ADMIN` | `admin` | Administrador del realm, para la consola de Keycloak |
 | `KEYCLOAK_ADMIN_PASSWORD` | valor local | Contraseña de ese administrador |
-| `RUSTFS_PORT` | `9000` | API compatible con S3 |
-| `RUSTFS_CONSOLE_PORT` | `9001` | Consola web de RustFS |
-| `RUSTFS_ACCESS_KEY` | valor local | Credencial S3 del backend |
-| `RUSTFS_SECRET_KEY` | valor local | Secreto S3 del backend |
-| `S3_ENDPOINT` | `http://rustfs:9000` | Endpoint S3 que resuelve el backend por nombre de servicio |
-| `S3_REGION` | `us-east-1` | Región que exige el SDK aunque el almacenamiento sea local |
-| `S3_BUCKET` | `vetcat-adjuntos` | Bucket de adjuntos |
 | `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
-
-Las variables `RUSTFS_*` y `S3_*` siguen en `.env.example` mientras el compose conserve RustFS. El [ADR-0009](adr/0009-sin-almacenamiento-de-objetos.md) lo retira del alcance (ya no hay adjuntos); quitar el servicio, sus variables y su puerto es un cambio de infraestructura aparte, **pendiente**.
 
 **Puertos.** Todos se publican en `127.0.0.1`, nunca fuera de la máquina.
 
@@ -68,8 +59,6 @@ Las variables `RUSTFS_*` y `S3_*` siguen en `.env.example` mientras el compose c
 | PostgreSQL | `POSTGRES_PORT` (5432) | 5432 | Si ya hay un PostgreSQL local escuchando, cambia la variable |
 | Keycloak | `KEYCLOAK_PORT` (8080) | 8080 | |
 | Keycloak, management | `KEYCLOAK_MANAGEMENT_PORT` (9002) | 9000 | Salud y métricas |
-| RustFS, API S3 | `RUSTFS_PORT` (9000) | 9000 | |
-| RustFS, consola | `RUSTFS_CONSOLE_PORT` (9001) | 9001 | |
 | pgAdmin | `PGADMIN_PORT` (5050) | 80 | Solo con `--profile admin` |
 | Consola Flutter Web | 8081 | — | Cuando exista; es el `redirect_uri` local de Keycloak |
 
