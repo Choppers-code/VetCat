@@ -24,7 +24,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 |---|---|---|
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
 | `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:8081/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
-| Adjuntos | RustFS en el compose ([ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) | Servicio compatible con S3 |
+| Correo (recuperación de contraseña e invitaciones) | Buzón de correo de pruebas en el compose | Servidor SMTP real, configurado en Keycloak |
 | Migraciones | `docker compose run --rm migraciones`, antes de arrancar la API | El mismo contenedor, como job previo al despliegue |
 | Logs | Consola | Recolectados y con retención |
 | Secretos | `.env` local, nunca en el repo | Gestor de secretos del proveedor |
@@ -59,6 +59,8 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
 
+Las variables `RUSTFS_*` y `S3_*` siguen en `.env.example` mientras el compose conserve RustFS. El [ADR-0009](adr/0009-sin-almacenamiento-de-objetos.md) lo retira del alcance (ya no hay adjuntos); quitar el servicio, sus variables y su puerto es un cambio de infraestructura aparte, **pendiente**.
+
 **Puertos.** Todos se publican en `127.0.0.1`, nunca fuera de la máquina.
 
 | Servicio | Máquina | Contenedor | Nota |
@@ -74,12 +76,11 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 ## 4. Reglas de portabilidad
 
 1. **Configuración por variables de entorno.** Ningún valor de conexión, dominio o credencial vive en el código.
-2. **Sin estado en el contenedor.** Lo único persistente son los volúmenes de PostgreSQL y del almacenamiento de objetos.
+2. **Sin estado en el contenedor.** Lo único persistente son los volúmenes de PostgreSQL.
 3. **Logs a `stdout`.** Nada escribe archivos de log propios.
 4. **Sin `localhost` en la configuración por defecto de producción.** Las URLs internas se resuelven por nombre de servicio del compose.
-5. **Almacenamiento de adjuntos detrás de una interfaz.** RustFS en local y S3 en nube comparten la misma abstracción: el backend solo habla la API S3.
-6. **Migraciones como job, no al arrancar la API.** Con varias réplicas, `spring.flyway` al inicio duplica trabajo y compite.
-7. **Healthchecks reales.** `liveness` y `readiness` separados, y `depends_on: condition: service_healthy` en compose.
+5. **Migraciones como job, no al arrancar la API.** Con varias réplicas, `spring.flyway` al inicio duplica trabajo y compite.
+6. **Healthchecks reales.** `liveness` y `readiness` separados, y `depends_on: condition: service_healthy` en compose.
 
 ## 5. Migraciones
 
@@ -93,6 +94,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 ## 6. App Android
 
 - **Primer alcance: solo Android.** iOS queda para cuando exista Mac, Xcode y cuenta de Apple Developer.
+- **Una sola app** para `veterinario` y `cliente`, con una vista por rol según la clínica activa. `clinica_admin` y `recepcionista` usan la consola web.
 - Pruebas locales: APK de debug contra `10.0.2.2` (emulador) o la IP de la máquina en la LAN (dispositivo físico).
 - El tráfico sin cifrar se permite **solo** en la configuración de debug; en release, HTTPS obligatorio.
 - Firma: keystore como secreto, nunca en el repositorio.
@@ -101,16 +103,17 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 
 ## 7. Respaldos y restauración
 
-Restaurar una clínica requiere **cuatro** piezas, no una:
+Restaurar una clínica requiere **tres** piezas, no una:
 
 1. El esquema `clinica_xxx`.
 2. La fila correspondiente en `catalogo.clinica` y `catalogo.usuario_clinica`.
 3. Los usuarios del realm en Keycloak.
-4. Los objetos del almacenamiento bajo el prefijo de esa clínica.
+
+Ya no hay objetos de almacenamiento que respaldar: el logo vive en la base y los PDF se generan al vuelo ([ADR-0009](adr/0009-sin-almacenamiento-de-objetos.md)).
 
 | Entorno | Mecanismo |
 |---|---|
-| Local | `pg_dump` de `vetcat_db` y de `keycloak_db`, más copia del volumen de objetos, a una carpeta fuera del repo |
+| Local | `pg_dump` de `vetcat_db` y de `keycloak_db`, a una carpeta fuera del repo |
 | Nube | Base backup + archivado de WAL para desastre total; dump lógico por esquema para exportar o restaurar una clínica |
 
 - Los respaldos se cifran y no se guardan en el mismo host que la base.
@@ -128,19 +131,21 @@ Restaurar una clínica requiere **cuatro** piezas, no una:
 
 - Runbook mínimo: base de datos caída, Keycloak caído, restauración de una clínica, migración fallida, certificado vencido.
 - Un canal único de incidentes y un responsable de guardia, aunque sea informal.
-- El soporte no accede a datos clínicos. `administrador_plataforma` trabaja sobre configuración, metadatos y disponibilidad, y esa prohibición no tiene excepción por incidente: ver `Decisiones_tecnicas.md` §4. Lo que sí queda en auditoría es cada acceso de soporte a la configuración de una clínica.
+- El soporte no accede a datos clínicos. `super_admin` trabaja sobre configuración, metadatos y disponibilidad, y esa prohibición no tiene excepción por incidente: ver `Decisiones_tecnicas.md` §4. Lo que sí queda en auditoría es cada acceso de soporte a la configuración de una clínica.
 
 ## 10. Checklist para subir a nube
 
 - [ ] Dominio y certificado con renovación automática.
-- [ ] Servidor SMTP configurado en Keycloak (recuperación de contraseña e invitaciones).
+- [ ] Servidor SMTP real configurado en Keycloak (recuperación de contraseña e invitaciones).
+- [ ] Proyecto de Firebase creado y credenciales como secreto.
+- [ ] Suspensión automática por vencimiento de plan activa y probada.
 - [ ] Secretos fuera del repositorio y con rotación.
 - [ ] Registro de imágenes con tags inmutables por SHA.
 - [ ] Migraciones como job y política de roll-forward documentada.
 - [ ] Respaldos cifrados y una restauración ensayada.
 - [ ] Monitoreo y alertas activos.
-- [ ] Límites de tasa en login, subida de adjuntos y búsquedas.
-- [ ] Límite de tamaño y tipo de archivo por clínica.
+- [ ] Límites de tasa en login y búsquedas.
+- [ ] Límite de tamaño y tipo del logo de la clínica (PNG o JPG, hasta 500 KB).
 - [ ] Endpoint de versión mínima de la app funcionando.
 - [ ] Ventana de mantenimiento declarada, o dos stacks con proxy para cambiar sin corte.
 
@@ -150,6 +155,7 @@ Restaurar una clínica requiere **cuatro** piezas, no una:
 - **Asumir la máquina del desarrollador.** Rutas absolutas, `localhost` y datos semilla se convierten en deuda al subir a nube.
 - **Disco único.** En local no hay redundancia; los respaldos deben salir del equipo.
 - **Sin staging, el primer despliegue se estrena con clientes dentro.**
+- **La notificación push depende de un servicio externo y de internet.** Si falla, la notificación sigue en la bandeja de la app ([ADR-0008](adr/0008-notificaciones-bandeja-y-push.md)).
 
 ## 12. Repositorio público
 

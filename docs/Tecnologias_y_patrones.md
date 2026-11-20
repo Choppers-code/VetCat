@@ -6,8 +6,8 @@ Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las 
 
 | Capa | Tecnología | Rol | Descartado y por qué |
 |---|---|---|---|
-| App móvil | Flutter (Dart) | Cliente principal en Android; iOS después | React Native: no reutiliza la consola web |
-| Consola web | Flutter Web | Administración de plataforma y de clínica | — |
+| App móvil | Flutter (Dart) | App única para `veterinario` y `cliente` en Android; iOS después | React Native: no reutiliza la consola web |
+| Consola web | Flutter Web | Dos áreas: la de la clínica (`clinica_admin` y `recepcionista`) y la de la plataforma (`super_admin`) | — |
 | Identidad | Keycloak, OIDC + PKCE | Login, JWT, roles | Autenticación propia: alto riesgo y mantenimiento |
 | Backend | Spring Boot 4.1 + Java 25 | API REST | Node/Nest: sin soporte equivalente de multi-tenancy en Hibernate |
 | Build | Gradle con Kotlin DSL y wrapper | Compilación reproducible sin depender de la máquina | Maven: válido, pero `build.gradle.kts` ya está en CODEOWNERS |
@@ -17,7 +17,8 @@ Qué se usa, por qué, y qué formas de escribir código están prohibidas. Las 
 | Migraciones | Flyway | Versionado por esquema | Liquibase: más pesado para lo que se necesita |
 | Seguridad | Spring Security 7, OAuth2 Resource Server | Validación de JWT y `@PreAuthorize` | — |
 | Contrato de API | springdoc OpenAPI | Documento que consumen app y consola | — |
-| Adjuntos | Almacenamiento compatible con S3 (RustFS en desarrollo, [ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) | Archivos fuera de las tablas | Binarios en la base de datos |
+| Notificaciones push | Firebase Cloud Messaging | Aviso con la app cerrada; adaptador en el backend y paquete oficial en Flutter ([ADR-0008](adr/0008-notificaciones-bandeja-y-push.md)) | Solo bandeja: no avisa con la app cerrada |
+| Correo de pruebas | Buzón de correo en el compose, solo desarrollo | Recuperación de contraseña e invitaciones sin un SMTP real | — |
 | Orquestación | Docker Compose | Stack local y despliegue inicial | Kubernetes: fuera de alcance |
 | Observabilidad | Micrometer con Prometheus y Grafana | Métricas y paneles de `Despliegue_y_operacion.md` §8 | — |
 | Arquitectura de código | ArchUnit | Una prueba vigila que las capas no se salten | Revisión manual |
@@ -45,7 +46,8 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | PostgreSQL | 17.11, imagen `postgres:17.11-alpine` |
 | Keycloak | 26.8.2, imagen `quay.io/keycloak/keycloak:26.8.2` |
 | Flutter | la estable al arrancar la fase 3, fijada y registrada aquí |
-| RustFS (solo desarrollo) | 1.0.5, imagen `rustfs/rustfs:1.0.5` ([ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md)) |
+| Correo de pruebas (solo desarrollo) | la estable al arrancar la fase 1, fijada y registrada aquí |
+| RustFS (solo desarrollo; se retira) | 1.0.5, imagen `rustfs/rustfs:1.0.5`. El [ADR-0009](adr/0009-sin-almacenamiento-de-objetos.md) reemplaza al [ADR-0005](adr/0005-rustfs-almacenamiento-desarrollo.md); sale del compose en un cambio de infraestructura aparte |
 
 - Las líneas de backend llegan con el BOM de Spring Boot 4.1; esta tabla recoge lo que hay que saber, no una lista de dependencias que se declare a mano.
 - Dentro de una línea se actualiza cuando hay parche de seguridad; entre líneas, nunca a mitad de fase.
@@ -62,8 +64,8 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | Repository + Specification | Consultas de agenda y filtros | Las consultas complejas se componen, no se concatenan |
 | DTO + Mapper | Frontera de la API | Las entidades JPA no se serializan |
 | Value Objects | `Dinero`, `RangoHorario`, `Correo` | Los invariantes viven en el tipo |
-| Strategy | Próxima dosis, métodos de pago, almacenamiento | Una interfaz por variante, sin `if` por tipo |
-| Adapter | Keycloak Admin API, S3, futuro CFDI | El dominio no depende de librerías externas |
+| Strategy | Próxima dosis, métodos de pago | Una interfaz por variante, sin `if` por tipo |
+| Adapter | Keycloak Admin API, envío de push (Firebase), futuro CFDI | El dominio no depende de librerías externas |
 | Eventos de dominio | Auditoría, alertas de vacunas | Los efectos secundarios se desacoplan del caso de uso |
 | Unit of Work | Transacción por request | La conexión y el esquema se resuelven al abrir la transacción |
 | Template Method | Aprovisionamiento de clínica | Pasos fijos: registrar, crear esquema, migrar, crear usuario, habilitar |
@@ -87,7 +89,7 @@ Reglas asociadas:
 
 - La UI no llama HTTP directamente; siempre pasa por un repositorio.
 - Un interceptor único adjunta el token, refresca la sesión y traduce el sobre `{success, message, data}`.
-- Las guardas de ruta ocultan pantallas por rol, pero **no autorizan**: el backend decide.
+- Las guardas de ruta ocultan pantallas **por rol y por función del plan**, pero **no autorizan**: el backend decide.
 - Un widget usado dos veces vive en el design system, no se copia.
 - La app y la consola comparten la interfaz de sesión, no la implementación: `flutter_appauth` en móvil y `openid_client` en el navegador (ADR-0004).
 - En el navegador los tokens viven en memoria y CORS se abre solo al origen de la consola, nunca con `*` ni con credenciales.
@@ -97,8 +99,8 @@ Reglas asociadas:
 - El tenant se resuelve por conexión y transacción; nunca en un campo compartido.
 - Flyway con dos ubicaciones: `catalogo` y `tenant`. Toda migración de tenant se aplica a cada esquema.
 - Dinero en `NUMERIC(12,2)` o enteros en centavos; nunca coma flotante.
-- Folio de factura consecutivo por clínica, sin huecos, con un contador por clínica actualizado dentro de la misma transacción y restricción única.
-- Los adjuntos viven fuera de la base, con referencia y URL firmada.
+- Folio de ticket consecutivo por clínica, sin huecos, con un contador por clínica actualizado dentro de la misma transacción y restricción única.
+- No hay adjuntos ni almacenamiento de objetos ([ADR-0009](adr/0009-sin-almacenamiento-de-objetos.md)). El logo de la clínica es la única imagen y vive en la base.
 - Toda modificación clínica relevante queda en auditoría.
 
 ## 5. Anti-patrones prohibidos
@@ -109,11 +111,11 @@ Reglas asociadas:
 - Usar `float` o `double` para dinero.
 - Delegar autorización a la app.
 - Consultar datos de otro módulo a través de su repositorio.
-- Guardar archivos binarios en las tablas principales.
+- Guardar archivos binarios en las tablas principales, salvo el logo de la clínica (PNG o JPG, hasta 500 KB).
 - Duplicar la pertenencia usuario-clínica en Keycloak y en base de datos a la vez.
 
 ## 6. Decisiones abiertas
 
 1. Versiones exactas del stack, a fijar en la Fase 0.
-2. Proveedor de almacenamiento en producción (S3 u otro servicio compatible). En desarrollo ya está decidido: RustFS, ADR-0005.
-3. Si la facturación fiscal requiere un proveedor externo de timbrado.
+2. Si la facturación fiscal requiere un proveedor externo de timbrado.
+3. Librería de generación de PDF (recetas, comprobantes de cita y tickets).
