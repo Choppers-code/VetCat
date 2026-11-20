@@ -23,6 +23,9 @@ permissions:
 jobs:
   build:
     name: build y pruebas
+    # Mientras no exista el módulo backend, el job se omite en vez de fallar
+    # en `cd backend`. Se activa solo cuando llegue el primer PR que lo crea.
+    if: hashFiles('backend/**') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
