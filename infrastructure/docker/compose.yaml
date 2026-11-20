@@ -127,44 +127,6 @@ services:
       retries: 30
       start_period: 40s
 
-  rustfs:
-    image: rustfs/rustfs:1.0.5
-    restart: unless-stopped
-    environment:
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
-      RUSTFS_CONSOLE_ENABLE: "true"
-    ports:
-      - "127.0.0.1:${RUSTFS_PORT:-9000}:9000"
-      - "127.0.0.1:${RUSTFS_CONSOLE_PORT:-9001}:9001"
-    volumes:
-      - rustfsdata:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-
-  # Crea el bucket de adjuntos. Idempotente: si ya existe, no falla.
-  rustfs-init:
-    image: amazon/aws-cli:2.32.0
-    restart: "no"
-    depends_on:
-      rustfs:
-        condition: service_healthy
-    environment:
-      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY}
-      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY}
-      AWS_DEFAULT_REGION: ${S3_REGION}
-      S3_BUCKET: ${S3_BUCKET}
-      S3_ENDPOINT: ${S3_ENDPOINT}
-    entrypoint: ["sh", "-c"]
-    command:
-      - >-
-        aws --endpoint-url "$${S3_ENDPOINT}" s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null ||
-        aws --endpoint-url "$${S3_ENDPOINT}" s3api create-bucket --bucket "$${S3_BUCKET}"
-
   pgadmin:
     image: dpage/pgadmin4:9.8
     restart: unless-stopped
@@ -183,5 +145,4 @@ services:
 
 volumes:
   pgdata:
-  rustfsdata:
   pgadmindata:
