@@ -35,7 +35,7 @@ Es el sprint del plazo (ver [`Plan_de_sprints.md`](../Plan_de_sprints.md) §2). 
 
 | Issue | Responsable | Req. | Depende de |
 |---|---|---|---|
-| Revisar y aprobar los PR de documentación y de Spec Kit (#87 a #97 y #98 a #102) | `Anton-code-sp` | todos | PR abiertos |
+| Revisar y aprobar los PR de documentación y de Spec Kit (#87 a #97, #98 a #100, #102 y #103) | `Anton-code-sp` | todos | PR abiertos |
 | Spike: Boot 4.1 y JDK 25 con Security 7, springdoc, Testcontainers y ArchUnit | `Anton-code-sp` | — | #40 |
 | ADR de aprovisionamiento en runtime y de restablecer `search_path` | `Anton-code-sp` | CLI | #15, #16 |
 | Esqueleto del backend: Gradle y Spring Boot | `Carlosss1819` | — | Spike |
