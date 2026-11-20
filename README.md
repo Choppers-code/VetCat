@@ -1,6 +1,6 @@
 # VetCat
 
-SaaS multi-clínica para veterinarias pequeñas: agenda de citas, expediente clínico, control de vacunas, portal del dueño y facturación con caja. Una sola aplicación compartida por todas las clínicas, con los datos aislados por clínica mediante un esquema de PostgreSQL por tenant.
+SaaS multi-clínica para veterinarias pequeñas: agenda de citas, expediente clínico, control de vacunas, portal del cliente, ventas con caja e inventario simple. Una sola aplicación compartida por todas las clínicas, con los datos aislados por clínica mediante un esquema de PostgreSQL por tenant y funciones según el plan de cada clínica.
 
 **Estado:** planificación. Todavía no hay código de negocio; el repositorio contiene la documentación del plan y la estructura de carpetas.
 
@@ -38,14 +38,17 @@ Antes de empezar, elige una tarjeta en *Listo* del [tablero](https://github.com/
 
 | # | Documento | Contenido |
 |---|---|---|
-| 1 | [Alcance.md](docs/Alcance.md) | Qué se construye, qué no, y con qué clientes |
-| 2 | [Roadmap.md](docs/Roadmap.md) | Fases, entregas, versiones y dependencias duras |
-| 3 | [Decisiones_tecnicas.md](docs/Decisiones_tecnicas.md) | Reglas de arquitectura y modelo de datos |
-| 4 | [Tecnologias_y_patrones.md](docs/Tecnologias_y_patrones.md) | Stack, patrones de diseño y anti-patrones |
-| 5 | [Equipo_responsabilidades.md](docs/Equipo_responsabilidades.md) | Quién es dueño de qué y cómo se evita el solape |
-| 6 | [Despliegue_y_operacion.md](docs/Despliegue_y_operacion.md) | Entornos, migraciones, respaldos, monitoreo e incidentes |
-| 7 | [Estructura_proyecto.md](docs/Estructura_proyecto.md) | Qué hay en cada carpeta y dónde va cada cosa |
-| 8 | [Flujo_de_trabajo.md](docs/Flujo_de_trabajo.md) | Ramas, commits, PRs, releases y uso del tablero |
+| 1 | [requerimientos/README.md](docs/requerimientos/README.md) | Requerimientos funcionales y no funcionales: la base del proyecto |
+| 2 | [Alcance.md](docs/Alcance.md) | Qué se construye, qué no, y con qué clientes |
+| 3 | [Roadmap.md](docs/Roadmap.md) | Fases, entregas, versiones y dependencias duras |
+| 4 | [Decisiones_tecnicas.md](docs/Decisiones_tecnicas.md) | Reglas de arquitectura y modelo de datos |
+| 5 | [Tecnologias_y_patrones.md](docs/Tecnologias_y_patrones.md) | Stack, patrones de diseño y anti-patrones |
+| 6 | [Equipo_responsabilidades.md](docs/Equipo_responsabilidades.md) | Quién es dueño de qué y cómo se evita el solape |
+| 7 | [Despliegue_y_operacion.md](docs/Despliegue_y_operacion.md) | Entornos, migraciones, respaldos, monitoreo e incidentes |
+| 8 | [Estructura_proyecto.md](docs/Estructura_proyecto.md) | Qué hay en cada carpeta y dónde va cada cosa |
+| 9 | [Flujo_de_trabajo.md](docs/Flujo_de_trabajo.md) | Ramas, commits, PRs, releases y uso del tablero |
+
+Si un documento contradice a los requerimientos, se corrige el documento.
 
 ## Cómo se trabaja
 
@@ -57,7 +60,7 @@ Antes de empezar, elige una tarjeta en *Listo* del [tablero](https://github.com/
 
 ## Documentos originales
 
-`docs/historico/Propuesta_VetCat.md` (v1.0) y `docs/historico/Plan_inicial.md` son la propuesta y el plan originales. Se conservan como referencia y **no se actualizan**. Donde contradigan a los ocho documentos de arriba, mandan los ocho de arriba.
+`docs/historico/Propuesta_VetCat.md` (v1.0) y `docs/historico/Plan_inicial.md` son la propuesta y el plan originales. Se conservan como referencia y **no se actualizan**. Donde contradigan a los documentos de arriba, mandan los de arriba.
 
 ## Licencia
 
