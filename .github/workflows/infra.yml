@@ -59,3 +59,29 @@ jobs:
             fi
           done <<<"$montajes"
           echo "Todos los montajes existen."
+
+      # La tabla de variables de Despliegue_y_operacion.md §3 repite el
+      # contrato de .env.example. Si alguien añade una variable y no la
+      # documenta, este paso lo detecta en vez de dejar la tabla callada.
+      - name: Comparar .env.example con la tabla de variables
+        run: |
+          set -euo pipefail
+          entorno=$(grep -oE '^[A-Z][A-Z0-9_]*=' infrastructure/docker/.env.example \
+            | tr -d '=' | sort -u)
+          # Solo la sección 3 (tabla de variables); la sección siguiente usa
+          # comillas invertidas para otros valores, como `redirect_uri`.
+          tabla=$(sed -n '/^\*\*Variables de entorno\.\*\*/,/^\*\*Puertos\.\*\*/p' \
+            docs/Despliegue_y_operacion.md \
+            | grep -oE '^\| `[A-Z][A-Z0-9_]*`' \
+            | tr -d '|` ' | sort -u)
+          echo "=== variables en .env.example ==="
+          echo "$entorno"
+          echo "=== variables en la tabla de documentación ==="
+          echo "$tabla"
+          if [ "$entorno" != "$tabla" ]; then
+            echo "::error::.env.example y la tabla de variables de Despliegue_y_operacion.md no coinciden."
+            echo "Solo en .env.example:"; comm -23 <(echo "$entorno") <(echo "$tabla")
+            echo "Solo en la tabla:"; comm -13 <(echo "$entorno") <(echo "$tabla")
+            exit 1
+          fi
+          echo "Contrato de variables documentado al completo."

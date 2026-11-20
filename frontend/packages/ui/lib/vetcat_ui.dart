@@ -3,8 +3,12 @@ library;
 
 import 'package:flutter/material.dart';
 
-/// Pantalla mínima con un título centrado. Sirve de base mientras llegan
-/// el tema y los componentes reales.
+export 'src/tema.dart';
+export 'src/tokens.dart';
+
+/// Pantalla mínima con un título centrado. Toma sus colores y su tipografía
+/// del tema de la app (`VetcatTema`); sirve de base mientras llegan los
+/// componentes reales.
 class PantallaMinima extends StatelessWidget {
   const PantallaMinima({super.key, required this.titulo});
 
