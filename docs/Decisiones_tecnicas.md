@@ -91,38 +91,53 @@ ALTER TABLE cita
 - Se agregan `consultorio`, `horario_atencion` (por veterinario y por consultorio, con excepciones por fecha), `bloqueo_agenda` y la duración por servicio en el catálogo de conceptos.
 - El horario de atención se valida en el servicio; la restricción de exclusión solo impide empalmes, no citas fuera de horario.
 
-## 6. Expediente clínico: entidades separadas e inmutables
+## 6. Expediente clínico: entidades separadas y con versiones
 
-- `consulta` es el encuentro; `diagnostico`, `tratamiento`, `receta`, `nota` y `adjunto` son entidades propias, no columnas de texto.
-- Una consulta no se sobrescribe: se corrige con una consulta nueva.
+- `consulta` es el encuentro; `diagnostico`, `tratamiento`, `receta` y `nota` son entidades propias, no columnas de texto. La consulta puede o no estar ligada a una cita. La receta forma parte de la consulta y se versiona con ella.
+- Solo el veterinario edita el expediente. Cada edición crea una versión nueva; las anteriores se conservan con autor y fecha y nunca se sobrescriben ni se borran.
 - Toda consulta registra qué veterinario la realizó y las fechas y horas.
-- Los adjuntos se guardan fuera de las tablas principales, con referencia, validación por contenido real del archivo, límite de tamaño y acceso mediante URL firmada de vida corta.
+- El `cliente` ve solo el resumen permitido (fecha, motivo, diagnóstico, tratamiento y receta) de la última versión de las consultas cerradas.
 - Los cambios importantes y la **lectura** del expediente se registran en auditoría.
+- El PDF de la receta y el comprobante de la cita se generan en el momento, sin almacenarse, con los datos de la clínica y su logo opcional: una imagen PNG o JPG de hasta 500 KB guardada en la base.
 
 ## 7. Vacunas
 
-- `vacuna_catalogo` es **global**, en `catalogo`, sembrado por migración, con una tabla de override por clínica y una precedencia definida (el override gana, campo por campo).
+- `vacuna_catalogo` es **por clínica**, en el esquema de la clínica. No hay catálogo global ni sembrado por migración, ni tabla de override. Cada vacuna tiene un solo intervalo; los esquemas de varias dosis con intervalos distintos quedan fuera.
 - `vacuna_aplicada` guarda mascota, vacuna, fecha de aplicación, `proxima_dosis`, `lote` y `veterinario_id`.
-- La próxima dosis se calcula con el intervalo del catálogo y puede ajustarse por criterio veterinario.
-- Las alertas son dentro de la aplicación; no hay WhatsApp ni SMS.
+- La próxima dosis se calcula con el intervalo del catálogo y puede ajustarse por criterio veterinario; el valor calculado original se conserva.
+- Las alertas son dentro de la aplicación: vencidas y próximas (**30 días**, configurable) para `veterinario` y `clinica_admin`. La `recepcionista` consulta el catálogo pero no ve aplicaciones ni próximas dosis.
 
-## 8. Facturación y caja
+## 8. Ventas, caja y tickets
 
-- Catálogo de conceptos con `tipo` (`SERVICIO` / `PRODUCTO`), precio por clínica, unidad y lote opcional, para que el inventario se enganche después sin migrar datos.
-- Dinero con `NUMERIC(12,2)` o enteros en centavos. **Nunca** coma flotante.
+- Todo es opcional por plan: `ventas`, y `turno_caja` e `inventario`, que requieren `ventas`.
+- Catálogo de conceptos con `tipo` (`SERVICIO` / `PRODUCTO`) y precio por clínica. El producto puede ser **controlado**.
+- Dinero con `NUMERIC(12,2)` o enteros en centavos. **Nunca** coma flotante. Solo efectivo.
 - Folio consecutivo por clínica **sin huecos**, con un contador por clínica actualizado dentro de la misma transacción (`UPDATE ... RETURNING`) y restricción única. Una secuencia de PostgreSQL no sirve para esto: no es transaccional y un rollback deja hueco.
+- Estados del ticket: `BORRADOR`, `EMITIDO`, `PAGADO`, `CANCELADO`. El ticket es un comprobante interno, no una factura. Un ticket emitido no se edita ni se borra.
+- Solo `clinica_admin` puede cancelar un ticket, con motivo y auditoría y conservando el folio, salvo que pertenezca a un turno de caja ya cerrado.
 - Turno de caja con apertura, cierre y arqueo; la diferencia se registra, no se corrige.
-- Estados: borrador, emitida, pagada, cancelada. Una factura emitida no se edita ni se borra.
-- Comprobante interno en v1.2; la facturación fiscal queda como fase aparte.
+- **Inventario simple.** Las entradas de stock llevan su propia fecha de caducidad (obligatoria si el producto tiene caducidad). El stock se descuenta al emitir el ticket, empezando por lo que caduca antes; nunca queda negativo y se devuelve al cancelar el ticket. Hay alertas de stock bajo y de caducidad a 30 días. Si el plan no incluye `inventario`, los productos son solo conceptos con precio.
+- **Reportes:** opcionales por plan, solo lectura, con conteos y totales por rango de fechas.
+- La facturación fiscal queda como fase aparte.
 
 ## 9. App móvil
 
+- **Una sola app Android** para `veterinario` y `cliente`, con una vista por rol según la clínica activa. Los dos conjuntos de pantallas viven en carpetas separadas (`features/veterinario` y `features/cliente`) para poder partir la app más adelante. Si el usuario tiene ambos roles en la clínica, puede cambiar de vista sin cerrar sesión. `clinica_admin` y `recepcionista` usan la consola web.
 - **Android primero.** iOS queda fuera del primer alcance: requiere Mac, Xcode y cuenta de Apple Developer.
 - Cliente público de Keycloak con Authorization Code + PKCE y redirect a esquema propio (`vetcat://callback`), abriendo el navegador del sistema. Nunca un WebView embebido.
 - Tráfico sin cifrar permitido solo en configuración de debug; en release, HTTPS obligatorio.
 - Tokens en el almacenamiento seguro del sistema, con refresh.
 - Los contratos publicados no se rompen: la app instalada no se actualiza al instante. Se necesita versionado de API y un endpoint de versión mínima para forzar actualización.
 - Sin modo sin conexión en esta entrega: solo caché de lectura y reintento.
+- Notificaciones push con Firebase Cloud Messaging ([ADR-0008](adr/0008-notificaciones-bandeja-y-push.md)), con permiso del usuario.
+
+### Notificaciones
+
+- Toda notificación se guarda en una **bandeja** por usuario y clínica (90 días) y se envía además por push. La bandeja es la fuente de verdad.
+- El texto del push no incluye datos clínicos.
+- Los tokens de dispositivo se guardan por usuario y se borran al cerrar sesión.
+- Los trabajos programados (recordatorios, vencimiento de planes) reciben el tenant de forma explícita, como exige §2.
+- El envío va detrás de un adaptador. Si el servicio de push falla, la notificación sigue en la bandeja.
 
 ## 10. Despliegue y operación
 
@@ -130,17 +145,16 @@ ALTER TABLE cita
 - Configuración exclusivamente por variables de entorno; sin rutas del host ni `localhost` incrustados.
 - Migraciones en un contenedor one-shot antes de arrancar la API, nunca con `spring.flyway` en cada réplica.
 - Logs a `stdout`; estado solo en volúmenes.
+- El compose de desarrollo incluye un buzón de correo de pruebas para la recuperación de contraseña y las invitaciones. Las credenciales de Firebase son un secreto fuera del repositorio.
 - Detalle en `docs/Despliegue_y_operacion.md`.
 
 ## 11. Consecuencias operativas
 
 - Migraciones con Flyway, aplicadas por esquema; sin secretos ni `.env` en el repositorio.
-- Respaldos por esquema **más** catálogo, usuarios de Keycloak y objetos de almacenamiento: restaurar una clínica requiere las cuatro piezas.
+- Respaldos por esquema **más** catálogo y usuarios de Keycloak: restaurar una clínica requiere las tres piezas. Ya no hay objetos de almacenamiento que respaldar: el logo vive en la base y los PDF se generan al vuelo.
 - Auditoría por esquema de clínica.
 - CI/CD con firma de APK y keystore como secreto.
 
 ## Pendiente de confirmar
 
 1. Facturación fiscal (CFDI o equivalente) y su proveedor.
-2. Notificaciones push.
-3. Fase de inventario.
