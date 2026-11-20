@@ -1,0 +1,4 @@
+# La configuración llega por variables de entorno; nada depende de la máquina.
+spring:
+  application:
+    name: vetcat-backend
