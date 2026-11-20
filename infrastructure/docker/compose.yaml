@@ -146,7 +146,7 @@ services:
       # SMTP se usa solo dentro del compose; la UI se publica en localhost.
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8025/"]
+      test: ["CMD", "/mailpit", "readyz"]
       interval: 10s
       timeout: 5s
       retries: 20
