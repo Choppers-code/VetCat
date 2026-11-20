@@ -20,7 +20,7 @@ El plazo cubre el Sprint 4 (22 – 28 nov) y los dos primeros días del Sprint 5
 
 | # | Entregable | Responsable | Sprint |
 |---|---|---|---|
-| 1 | Documentación alineada con los requerimientos: los PR de documentación fusionados (#70 a #80) | `Anton-code-sp` revisa; `Carlosss1819` revisa el de `CODEOWNERS` | 4 |
+| 1 | Documentación alineada con los requerimientos: los PR de documentación fusionados (#87 a #97) | `Anton-code-sp` revisa; `Carlosss1819` revisa el de `CODEOWNERS` | 4 |
 | 2 | Spec Kit en el repositorio, con la constitución y las plantillas en español, y al menos una especificación real (agenda) | `Raul-Rolu`, `ToNyyF1` | 4 |
 | 3 | Plan de sprints aprobado por el equipo | `Raul-Rolu` | 4 |
 | 4 | Stack local sin RustFS y con buzón de correo de pruebas | `Carlosss1819` | 4 |

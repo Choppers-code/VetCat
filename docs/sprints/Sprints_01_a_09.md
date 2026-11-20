@@ -25,8 +25,8 @@ Sin trabajo registrado en el repositorio.
 | CI del compose y documentación de variables | `Anton-code-sp` | — | Entregado (#56, #57) |
 | Esqueleto de Flutter: dos apps y dos paquetes | `Nacho-Nacho3` | — | Entregado (#59) |
 | Requerimientos: índice, RNF, matriz y módulos 01 a 04 | `Raul-Rolu` | todos | Entregado (#67, #69) |
-| Requerimientos, módulos 05 a 13 | `Raul-Rolu` | todos | PR abiertos (#70, #71) |
-| Alinear los documentos con los requerimientos (matriz de roles, alcance, decisiones técnicas, ADR, roadmap, equipo, flujo, despliegue, AGENTS y README) | `Raul-Rolu` | todos | PR abiertos (#72 a #80) |
+| Requerimientos, módulos 05 a 13 | `Raul-Rolu` | todos | PR abiertos (#87, #88) |
+| Alinear los documentos con los requerimientos (matriz de roles, alcance, decisiones técnicas, ADR, roadmap, equipo, flujo, despliegue, AGENTS y README) | `Raul-Rolu` | todos | PR abiertos (#89 a #97) |
 | Spec Kit y plan de sprints | `Raul-Rolu` | — | PR abiertos |
 
 ## Sprint 4 · 22 – 28 nov 2026 · Fase 1 (cierre) y 2 · Corte del 30 de noviembre
@@ -35,7 +35,7 @@ Es el sprint del plazo (ver [`Plan_de_sprints.md`](../Plan_de_sprints.md) §2). 
 
 | Issue | Responsable | Req. | Depende de |
 |---|---|---|---|
-| Revisar y aprobar los PR de documentación y de Spec Kit (#70 a #80 y los de Spec Kit y sprints) | `Anton-code-sp` | todos | PR abiertos |
+| Revisar y aprobar los PR de documentación y de Spec Kit (#87 a #97 y #98 a #102) | `Anton-code-sp` | todos | PR abiertos |
 | Spike: Boot 4.1 y JDK 25 con Security 7, springdoc, Testcontainers y ArchUnit | `Anton-code-sp` | — | #40 |
 | ADR de aprovisionamiento en runtime y de restablecer `search_path` | `Anton-code-sp` | CLI | #15, #16 |
 | Esqueleto del backend: Gradle y Spring Boot | `Carlosss1819` | — | Spike |
