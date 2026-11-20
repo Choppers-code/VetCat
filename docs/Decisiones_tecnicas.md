@@ -20,28 +20,32 @@ Correcciones y definiciones que resuelven las contradicciones entre `historico/P
 
 ## 3. Pertenencia usuario-clínica: tabla global y multi-clínica
 
-- `catalogo.usuario_clinica (keycloak_id, clinica_id, rol, estado)` es la **única** fuente de verdad de la pertenencia. No vive dentro del esquema de la clínica, porque un usuario puede pertenecer a varias.
+- `catalogo.usuario_clinica` tiene una fila por `(keycloak_id, clinica_id, rol)`, con `estado`, y es la **única** fuente de verdad de la pertenencia. No vive dentro del esquema de la clínica, porque un usuario puede pertenecer a varias.
+- Un usuario puede tener **varios roles en una misma clínica** (por ejemplo `veterinario` y `clinica_admin`). Sus permisos son la unión de los roles que tiene en **esa** clínica. Ver el [ADR-0006](adr/0006-varios-roles-por-clinica.md).
 - Un usuario puede trabajar en más de una clínica. Al iniciar sesión elige la clínica activa y recibe un token acotado a ella.
-- Ese token lo emite el backend, no Keycloak: `POST /api/v1/sesion/clinicas/{id}` valida la pertenencia en `usuario_clinica` y devuelve un token de tenant firmado por la API, de 15 minutos, con `sub`, `tenant_id` y el rol efectivo de **esa** clínica. El detalle, los dos validadores y las alternativas descartadas están en el [ADR-0003](adr/0003-token-por-clinica.md).
-- El token de identidad de Keycloak solo vale en `/api/v1/sesion/**` y `/api/v1/plataforma/**`. Ningún endpoint de negocio de una clínica lo acepta: sin `tenant_id` no hay esquema. `administrador_plataforma` es el único rol que se toma del realm, porque no pertenece a ninguna clínica.
-- Lo que no se negocia: el `tenant_id` llega en un token firmado y **el rol efectivo sale de `usuario_clinica` para esa clínica**, no del rol de realm. Un usuario que es administrador en la clínica A y recepcionista en la B no puede llevar el rol de A al token de B.
+- Ese token lo emite el backend, no Keycloak: `POST /api/v1/sesion/clinicas/{id}` valida la pertenencia en `usuario_clinica` y devuelve un token de tenant firmado por la API, de 15 minutos, con `sub`, `tenant_id` y la lista `roles` efectivos de **esa** clínica. El detalle, los dos validadores y las alternativas descartadas están en el [ADR-0003](adr/0003-token-por-clinica.md).
+- El token de identidad de Keycloak solo vale en `/api/v1/sesion/**` y `/api/v1/plataforma/**`. Ningún endpoint de negocio de una clínica lo acepta: sin `tenant_id` no hay esquema. `super_admin` es el único rol que se toma del realm, porque no pertenece a ninguna clínica.
+- Lo que no se negocia: el `tenant_id` llega en un token firmado y **los roles efectivos salen de `usuario_clinica` para esa clínica**, no del rol de realm. Un usuario que es `clinica_admin` en la clínica A y `recepcionista` en la B no puede llevar el rol de A al token de B.
+- El `cliente` es un miembro de la clínica con el rol `cliente`. Su ficha de propietario se enlaza mediante un código de vinculación de un solo uso que vence a los **2 días**; la pertenencia sigue siendo la única fuente de verdad.
 - Keycloak: un solo realm `vetcat` con los roles como catálogo de valores, y la asignación por clínica en base de datos.
 
 ## 4. Roles y permisos
 
-Roles: `administrador_plataforma`, `administrador_clinica`, `veterinario`, `recepcionista`, `dueno`.
+Roles: `super_admin`, `clinica_admin`, `veterinario`, `recepcionista`, `cliente`.
 
 - La autorización se aplica con `@PreAuthorize` en el backend.
-- `administrador_plataforma` aprovisiona clínicas y da soporte; **no** accede a datos clínicos.
-- `recepcionista` gestiona agenda, propietarios y mascotas; **no** accede a datos clínicos ni registra vacunas.
-- `dueno` solo lectura de lo suyo, con campos explícitamente permitidos, y el backend verifica la propiedad de la mascota en **cada** consulta.
+- `super_admin` aprovisiona clínicas y da soporte; **no** accede a datos clínicos, de pacientes ni de propietarios.
+- `clinica_admin` administra su clínica; **lee** el expediente y la auditoría de su clínica, sin editarlo.
+- `veterinario` confirma las citas de su agenda y resuelve las solicitudes de cancelación.
+- `recepcionista` gestiona agenda, propietarios, mascotas y caja; **ve el catálogo de vacunas**, pero no registra vacunas ni ve cartillas ni datos clínicos.
+- `cliente` solo lectura de lo suyo, más las solicitudes de cita y de cancelación, con campos explícitamente permitidos; el backend verifica la propiedad de la mascota en **cada** consulta.
 
 La matriz completa de acciones por rol vive en [`docs/Matriz_roles.md`](Matriz_roles.md) y se implementa tal cual: lo que no figura en ella no se escribe con `@PreAuthorize`.
 
 ## 5. Agenda: el empalme lo impide la base de datos
 
 - `cita` incluye `tipo` (`CONSULTORIO` / `DOMICILIO`), `consultorio_id` obligatorio solo para el tipo `CONSULTORIO`, `direccion` para el tipo `DOMICILIO`, `inicio`, `fin`, `veterinario_id`, `mascota_id`, `motivo`, `estado`, `cancelada_por`, `motivo_cancelacion` y `reprogramada_de`.
-- Estados: `PENDIENTE`, `CONFIRMADA`, `ATENDIDA`, `NO_ASISTIO`, `CANCELADA`. Se modelan como `varchar` con `CHECK`, no como tipo PostgreSQL: agregar un valor a un `CREATE TYPE` obliga a un `ALTER TYPE` en cada esquema.
+- Estados: `PENDIENTE`, `CONFIRMADA`, `ATENDIDA`, `NO_ASISTIO`, `CANCELADA`. La cita nace `PENDIENTE` y la confirma el veterinario. Las transiciones válidas están en la tabla de [`requerimientos/06_AGE_agenda.md`](requerimientos/06_AGE_agenda.md), incluida `NO_ASISTIO → PENDIENTE` al reprogramar. Se modelan como `varchar` con `CHECK`, no como tipo PostgreSQL: agregar un valor a un `CREATE TYPE` obliga a un `ALTER TYPE` en cada esquema.
 - La extensión se crea una sola vez desde la migración de catálogo, en un esquema propio, y todos los esquemas de clínica la incluyen en su `search_path`:
 
 ```sql
@@ -90,6 +94,11 @@ ALTER TABLE cita
 - Un `SELECT` previo no basta: dos recepcionistas pueden reservar a la vez. El rechazo de la base se traduce en un `409` que la app muestra como conflicto de horario.
 - Se agregan `consultorio`, `horario_atencion` (por veterinario y por consultorio, con excepciones por fecha), `bloqueo_agenda` y la duración por servicio en el catálogo de conceptos.
 - El horario de atención se valida en el servicio; la restricción de exclusión solo impide empalmes, no citas fuera de horario.
+- La cita registra su **origen** (personal de la clínica o `cliente`). La **solicitud de cancelación** es una entidad propia, con estado (pendiente, aprobada, rechazada) y motivo.
+- El `cliente` puede tener como máximo **3 citas `PENDIENTE`** y solo puede solicitar cancelar con **5 horas** de anticipación. Ambos valores son configuración, no constantes.
+- Las citas `DOMICILIO` solo existen si el plan de la clínica incluye `visitas_domicilio`.
+- La cita que crea el `cliente` respeta el horario laboral y los bloqueos igual que la del personal.
+- El bloqueo que cae sobre citas activas las cancela con el motivo del bloqueo y dispara las notificaciones.
 
 ## 6. Expediente clínico: entidades separadas e inmutables
 
@@ -138,6 +147,15 @@ ALTER TABLE cita
 - Respaldos por esquema **más** catálogo, usuarios de Keycloak y objetos de almacenamiento: restaurar una clínica requiere las cuatro piezas.
 - Auditoría por esquema de clínica.
 - CI/CD con firma de APK y keystore como secreto.
+
+## 12. Planes y funciones
+
+- Hay un **único modelo de datos**: el plan activa funciones y fija límites, pero no cambia el esquema. En `catalogo` viven `plan`, `plan_funcion`, `plan_limite` y `pago_plan`; la clínica tiene un plan y una `vigente_hasta`.
+- Las funciones son `portal_cliente`, `recordatorios`, `ventas`, `turno_caja`, `inventario`, `visitas_domicilio` y `reportes`. `turno_caja` e `inventario` requieren `ventas`.
+- `plan_limite` fija el máximo de usuarios, de veterinarios y de mascotas. Un límite vacío significa sin límite.
+- **Las funciones y los límites se verifican en el servidor en cada petición.** No vienen en el token ni los informa la app.
+- Estados de la clínica: `ACTIVA`, `SUSPENDIDA` y `BAJA`. La suspensión por vencimiento es automática tras **3 días de gracia** sin pago registrado y no toca los datos. La baja conserva los datos y no se puede revertir desde la consola.
+- El cobro de los planes es manual: no hay pagos en línea ni datos bancarios. Ver el [ADR-0007](adr/0007-planes-y-funciones.md).
 
 ## Pendiente de confirmar
 
