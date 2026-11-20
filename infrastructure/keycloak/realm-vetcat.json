@@ -1,0 +1,21 @@
+{
+  "realm": "vetcat",
+  "enabled": true,
+  "displayName": "VetCat",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "clients": [],
+  "roles": {
+    "realm": []
+  },
+  "users": []
+}
