@@ -1,0 +1,137 @@
+openapi: 3.1.0
+info:
+  title: VetCat API
+  version: 0.1.0
+  description: >-
+    Contrato base de la API de VetCat. Todas las respuestas, incluidos los
+    errores, usan el mismo sobre. El tenant nunca viaja en la petición: se
+    deriva del JWT firmado (Decisiones_tecnicas.md §2).
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Comprobación de salud del servicio.
+      operationId: health
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Página a devolver, empezando en 0.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Tamaño de la página.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    Respuesta:
+      type: object
+      description: Sobre uniforme, usado también en errores.
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          description: Contenido de la respuesta; null cuando no lo hay.
+      additionalProperties: false
+
+    Error:
+      type: object
+      description: Cuerpo de error del sobre (success=false, data=null).
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          const: false
+        message:
+          type: string
+          description: Mensaje comprensible en español, sin trazas ni SQL.
+        data:
+          type: 'null'
+
+    Paginacion:
+      type: object
+      required: [contenido, pagina, tamano, total]
+      properties:
+        contenido:
+          type: array
+          items: {}
+        pagina:
+          type: integer
+        tamano:
+          type: integer
+        total:
+          type: integer
+
+  responses:
+    JsonExito:
+      description: Operación correcta.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Respuesta'
+    JsonError:
+      description: Error con el sobre uniforme.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Respuesta'
+    NoAutenticado:
+      description: Falta el JWT o es inválido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Prohibido:
+      description: El rol no permite la operación o el tenant no está activo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflicto:
+      description: Conflicto de horario o folio (restricción de base de datos).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    EntradaInvalida:
+      description: La entrada no supera la validación.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
