@@ -39,8 +39,8 @@ jobs:
             frontend/packages/ui \
             frontend/apps/vetcat_app \
             frontend/apps/vetcat_admin; do
-            echo "=== $projecto ==="
-            (cd "$projecto" && flutter pub get && flutter analyze && flutter test)
+            echo "=== $proyecto ==="
+            (cd "$proyecto" && flutter pub get && flutter analyze && flutter test)
           done
 
       - name: Compilar la consola web

@@ -10,6 +10,12 @@ on:
       - '.github/workflows/backend.yml'
   push:
     branches: [develop]
+    # Sin este filtro, el job correría en cada fusión a develop aunque no
+    # hubiera código de backend, y fallaría en `cd backend`.
+    paths:
+      - 'backend/**'
+      - 'database/**'
+      - '.github/workflows/backend.yml'
 
 permissions:
   contents: read
