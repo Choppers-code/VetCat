@@ -7,6 +7,7 @@
 | **Área** | 1 · Arquitectura |
 | **Issue** | #36 |
 | **Decide** | El token de tenant lo emite el backend tras validar la pertenencia; Keycloak emite solo la identidad |
+| **Enmendada por** | ADR-0006 (varios roles por clínica y nombres de roles) |
 
 ## Contexto
 

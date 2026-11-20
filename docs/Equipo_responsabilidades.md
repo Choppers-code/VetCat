@@ -6,11 +6,11 @@ Cinco personas, cinco áreas. La regla que evita el solape: **cada módulo y cad
 
 | # | Área | Objetivo | Fases | Dónde escribe |
 |---|---|---|---|---|
-| 1 | Líder técnico y arquitectura | Que el sistema funcione como uno solo: arquitectura, seguridad, contratos, revisión e integración | 0, 2, 3, 10 | `backend/.../security`, `tenancy`, `catalogo`, `plataforma`; `docs/` |
-| 2 | Backend — Pacientes y expediente | Propietarios, mascotas, expediente clínico, adjuntos y backend del portal | 4, 6, 8 | `backend/.../propietarios`, `mascotas`, `expediente`, `portal` |
-| 3 | Backend — Operación y cobro | Agenda, vacunas, facturación y caja | 5, 7, 9 | `backend/.../citas`, `vacunas`, `facturacion` |
-| 4 | Frontend Flutter | Design system, autenticación en la app, navegación y pantallas complejas | 3 a 10 | `frontend/apps`, `frontend/packages` |
-| 5 | Infraestructura, QA y seguridad | Docker, PostgreSQL, Keycloak, migraciones, CI/CD, Play Store y pruebas transversales | 1, 11 | `infrastructure/`, `database/`, `.github/` |
+| 1 | Líder técnico y arquitectura | Que el sistema funcione como uno solo: arquitectura, seguridad, contratos, revisión e integración; planes, funciones por plan, identidad y varios roles | 0, 2, 3, 10 | `backend/.../security`, `tenancy`, `catalogo`, `plataforma`, `planes`; `docs/` |
+| 2 | Backend — Pacientes y expediente | Propietarios, mascotas, expediente clínico, PDF de la receta y backend del portal | 4, 6, 8 | `backend/.../propietarios`, `mascotas`, `expediente`, `portal` |
+| 3 | Backend — Operación y cobro | Agenda y PDF del comprobante de cita, vacunas, notificaciones, ventas y caja, inventario y reportes | 5, 7, 8, 9 | `backend/.../citas`, `vacunas`, `facturacion`, `notificaciones`, `inventario`, `reportes` |
+| 4 | Frontend Flutter | Design system, autenticación en la app, navegación, pantallas de la app y de las consolas | 3 a 10 | `frontend/apps`, `frontend/packages` |
+| 5 | Infraestructura, QA y seguridad | Docker, PostgreSQL, Keycloak, migraciones, CI/CD, Play Store, pruebas transversales, credenciales de Firebase y buzón de correo de pruebas | 1, 11 | `infrastructure/`, `database/`, `.github/` |
 
 La fase 3 la comparten las áreas 1, 4 y 5: el backend valida tokens, Keycloak se configura y la app implementa el flujo. No es un solape porque cada una toca una capa distinta.
 
@@ -24,11 +24,12 @@ El número de persona corresponde al número de área. Los nombres y los equipos
 | Spring Security y resolver de tenant | 1 | 2 y 3 usan las anotaciones, no las modifican |
 | Migraciones | Cada dueño de módulo escribe las suyas | 5 es dueño del runner, del versionado y del aprovisionamiento |
 | Pruebas | Cada dueño prueba su módulo | 5 es dueño de las transversales: aislamiento, concurrencia, autorización, aceptación |
-| Adjuntos | 2 es dueño del módulo (entidad, validación, URL firmada) | 5 aprovisiona el almacenamiento |
-| Portal del dueño | 2 backend, 4 UI | 3 aporta solo la consulta de vacunas |
+| Portal del cliente | 2 backend, 4 UI | 3 aporta solo la consulta de vacunas |
+| Notificaciones | 3 es dueño del módulo (bandeja y adaptador de push) | 5 aporta las credenciales de Firebase y el buzón de correo de pruebas |
+| PDF de la receta y del comprobante de cita | 2 la receta; 3 el comprobante de cita | — |
 | Autenticación en la app | 5 configura, 4 implementa el flujo, 1 valida | — |
 | Design system | 4 | 2 y 3 arman sus pantallas con esos componentes |
-| Consola web de administración | 1 backend, 4 UI | — |
+| Consolas web (área de la clínica y de la plataforma) | 1 backend de plataforma, cada dueño de módulo su backend; 4 UI | — |
 | Contratos OpenAPI | El dueño del módulo escribe el del suyo | 1 revisa la convención; 2, 3 y 4 lo consumen |
 
 ## Cómo se hace cumplir
@@ -45,6 +46,7 @@ El documento dice de quién es cada cosa; estos dos mecanismos lo ejecutan.
 | `/backend/src/main/java/com/vetcat/tenancy/` | 1 |
 | `/backend/src/main/java/com/vetcat/catalogo/` | 1 |
 | `/backend/src/main/java/com/vetcat/plataforma/` | 1 |
+| `/backend/src/main/java/com/vetcat/planes/` | 1 |
 | `/backend/src/main/java/com/vetcat/propietarios/` | 2 |
 | `/backend/src/main/java/com/vetcat/mascotas/` | 2 |
 | `/backend/src/main/java/com/vetcat/expediente/` | 2 |
@@ -52,6 +54,9 @@ El documento dice de quién es cada cosa; estos dos mecanismos lo ejecutan.
 | `/backend/src/main/java/com/vetcat/citas/` | 3 |
 | `/backend/src/main/java/com/vetcat/vacunas/` | 3 |
 | `/backend/src/main/java/com/vetcat/facturacion/` | 3 |
+| `/backend/src/main/java/com/vetcat/notificaciones/` | 3 |
+| `/backend/src/main/java/com/vetcat/inventario/` | 3 |
+| `/backend/src/main/java/com/vetcat/reportes/` | 3 |
 | `/frontend/` | 4 |
 | `/database/` | 5 |
 | `/infrastructure/` | 5 |
@@ -72,11 +77,17 @@ El documento dice de quién es cada cosa; estos dos mecanismos lo ejecutan.
 | Flyway y aprovisionamiento de esquemas | A | | | | R |
 | Propietarios y mascotas | | R | | | |
 | Expediente clínico | | R | | | |
-| Adjuntos | | R | | | A |
 | Agenda, consultorios, horarios | | | R | | |
 | Vacunas | | | R | | |
-| Facturación y caja | | | R | | A |
-| Portal del dueño (backend) | | R | A | A | |
+| Ventas, caja y tickets | | | R | | A |
+| Inventario y reportes | | | R | | |
+| Notificaciones (bandeja y push) | A | | R | | A |
+| Planes y funciones por plan | R | | | | |
+| Identidad y varios roles por usuario | R | | | | A |
+| PDF de la receta | | R | | | |
+| PDF del comprobante de cita | | | R | | |
+| Credenciales de Firebase y buzón de correo de pruebas | | | | | R |
+| Portal del cliente (backend) | | R | A | A | |
 | Administración de plataforma (backend) | R | | | A | |
 | Design system y navegación | | | | R | |
 | Cliente HTTP y sobre de respuesta | | A | A | R | |
@@ -84,9 +95,9 @@ El documento dice de quién es cada cosa; estos dos mecanismos lo ejecutan.
 | Pantallas de propietarios, mascotas y expediente | | R | | A | |
 | Calendario de agenda y dashboard | | | A | R | |
 | Formulario de cita y pantallas de vacunas | | | R | A | |
-| Pantallas de facturación y caja | | | R | A | |
-| Portal del dueño (UI) | | A | | R | |
-| Consola web de administración (UI) | A | | | R | |
+| Pantallas de ventas, caja e inventario | | | R | A | |
+| Portal del cliente (UI) | | A | | R | |
+| Consolas web de la clínica y de la plataforma (UI) | A | | | R | |
 | Pruebas de módulo | | R | R | R | A |
 | Pruebas de aislamiento y concurrencia | A | | | | R |
 | Auditoría | R | A | A | | A |
@@ -110,9 +121,9 @@ Cada dueño de módulo escribe el contrato de su módulo; la fila "Convención O
 
 | Persona | Carga | Riesgo |
 |---|---|---|
-| 1 | Arquitectura, seguridad, tenants, administración de plataforma, auditoría, PRs | Alta, pero sin código de módulos |
-| 2 | Propietarios, mascotas, expediente, adjuntos, portal backend y sus pantallas | Alta |
-| 3 | Agenda, vacunas, facturación y caja, y sus pantallas | Alta |
+| 1 | Arquitectura, seguridad, tenants, planes, identidad, administración de plataforma, auditoría, PRs | Alta, pero sin código de módulos |
+| 2 | Propietarios, mascotas, expediente, PDF de la receta, portal backend y sus pantallas | Alta |
+| 3 | Agenda, vacunas, notificaciones, ventas y caja, inventario, reportes y sus pantallas | Muy alta: concentra seis módulos |
 | 4 | Design system, autenticación, cliente HTTP, calendario, dashboard, portal y consola web | Media-alta |
 | 5 | Docker, PostgreSQL, Keycloak, Flyway, CI/CD, Play Store y pruebas transversales | Alta |
 
