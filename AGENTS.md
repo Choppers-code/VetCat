@@ -36,7 +36,7 @@ One Android app for `veterinario` and `cliente` (Android first, mobile-first) + 
 - Money as `NUMERIC(12,2)` or integer minor units, never floating point. Ticket folios are sequential per clinic and gap-free.
 - Migrations via Flyway, applied per tenant schema. No secrets or `.env` in the repo.
 - Published API contracts are not broken: installed mobile clients cannot be updated instantly.
-- Nothing assumes the developer machine: config comes from environment variables, logs go to stdout, no state outside volumes, and migrations run as a one-off job — the same stack must run in the cloud unchanged.
+- Nothing assumes the developer machine: config comes from environment variables, logs go to stdout, no state outside volumes, and migrations run as a one-off job (the API only migrates the new schema of a freshly created clinic, under an advisory lock, per ADR-0010) — the same stack must run in the cloud unchanged.
 
 ## Conventions
 

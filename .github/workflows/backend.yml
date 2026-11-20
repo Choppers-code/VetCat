@@ -1,0 +1,39 @@
+name: backend
+
+# Build y pruebas del backend cuando exista codigo. Hoy no hay modulo
+# backend, asi que los pasos se omiten hasta que se anada el primero.
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'database/**'
+      - '.github/workflows/backend.yml'
+  push:
+    branches: [develop]
+    paths:
+      - 'backend/**'
+      - 'database/**'
+      - '.github/workflows/backend.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # hashFiles solo es valido en steps[*].if, no en jobs.<id>.if.
+      - name: Instalar Temurin JDK 25
+        if: hashFiles('backend/gradlew') != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Build y pruebas con Gradle
+        if: hashFiles('backend/gradlew') != ''
+        run: cd backend && ./gradlew build --no-daemon
