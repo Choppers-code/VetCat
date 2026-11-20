@@ -8,7 +8,7 @@ Correcciones y definiciones que resuelven las contradicciones entre `historico/P
 - **Dos unidades de persistencia**: una sin multi-tenant para `catalogo`, otra con `CurrentTenantIdentifierResolver` y `MultiTenantConnectionProvider` para los esquemas de clínica. Mezclar entidades globales y de tenant en una sola unidad es la parte más frágil de esta fase.
 - El nombre del esquema lo genera el servidor a partir de un identificador interno. Nunca lo envía el cliente.
 - `catalogo.clinica` incluye `zona_horaria` en formato IANA. Los horarios de atención y el cálculo de disponibilidad se hacen en esa zona; todo instante se guarda como `timestamptz` y las fechas sin hora como `date`.
-- Flyway con dos ubicaciones de migración: `catalogo` y `tenant`. El aprovisionamiento de una clínica es idempotente: registra en el catálogo, crea el esquema **vacío**, lo deja en la tabla de estado como pendiente de migrar y registra al administrador en Keycloak, con estados persistidos y un job de reconciliación si un paso falla. Quien aplica Flyway es siempre el runner one-shot, nunca la API: ver `Despliegue_y_operacion.md` §5.
+- Flyway con dos ubicaciones de migración: `catalogo` y `tenant`. El aprovisionamiento de una clínica es idempotente: registra en el catálogo, crea el esquema **vacío**, lo deja en la tabla de estado como pendiente de migrar y registra al administrador en Keycloak, con estados persistidos y un job de reconciliación si un paso falla. El runner one-shot migra los esquemas existentes; la API solo aplica el historial al esquema nuevo de una clínica recién creada, bajo advisory lock ([ADR-0010](adr/0010-aprovisionamiento-en-runtime.md)): ver `Despliegue_y_operacion.md` §5.
 
 ## 2. El tenant sale solo del token
 

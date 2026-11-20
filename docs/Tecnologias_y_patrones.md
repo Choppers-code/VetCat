@@ -45,7 +45,7 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | springdoc | 3.x |
 | PostgreSQL | 17.11, imagen `postgres:17.11-alpine` |
 | Keycloak | 26.8.2, imagen `quay.io/keycloak/keycloak:26.8.2` |
-| Flutter | la estable al arrancar la fase 3, fijada y registrada aquí |
+| Flutter | 3.47.2 (Dart 3.13.2), fijado en los cuatro `pubspec.yaml` de `frontend/` (`>=3.47.2 <3.48.0`) |
 | Correo de pruebas (solo desarrollo) | 1.33.1, imagen `axllent/mailpit:v1.33.1` |
 
 - Las líneas de backend llegan con el BOM de Spring Boot 4.1; esta tabla recoge lo que hay que saber, no una lista de dependencias que se declare a mano.
