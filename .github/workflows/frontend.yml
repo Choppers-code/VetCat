@@ -1,7 +1,7 @@
 name: frontend
 
 # Build y pruebas del frontend en cada PR. Sin esto, la regla de no fusionar
-# con CI en rojo no existe para el código Flutter (docs/Flujo_de_trabajo.md §4).
+# con CI en rojo no existe para el codigo Flutter (docs/Flujo_de_trabajo.md).
 on:
   pull_request:
     paths:
@@ -27,10 +27,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Comprobar la versión fijada
+      - name: Comprobar la version fijada
         run: flutter --version
 
-      # El orden importa: core y ui son dependencias por ruta de las dos apps.
+      # El orden importa: core y ui son dependencias por ruta de las apps.
       - name: Analizar y probar los cuatro proyectos
         run: |
           set -euo pipefail
