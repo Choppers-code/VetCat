@@ -15,6 +15,7 @@
 /backend/src/main/java/com/vetcat/tenancy/        @Choppers-code/arquitectura
 /backend/src/main/java/com/vetcat/catalogo/       @Choppers-code/arquitectura
 /backend/src/main/java/com/vetcat/plataforma/     @Choppers-code/arquitectura
+/backend/src/main/java/com/vetcat/planes/          @Choppers-code/arquitectura
 /backend/src/main/java/com/vetcat/shared/         @Choppers-code/arquitectura
 
 # ---------- Backend: pacientes y expediente ----------
@@ -27,6 +28,9 @@
 /backend/src/main/java/com/vetcat/citas/          @Choppers-code/operacion
 /backend/src/main/java/com/vetcat/vacunas/        @Choppers-code/operacion
 /backend/src/main/java/com/vetcat/facturacion/    @Choppers-code/operacion
+/backend/src/main/java/com/vetcat/notificaciones/   @Choppers-code/operacion
+/backend/src/main/java/com/vetcat/inventario/       @Choppers-code/operacion
+/backend/src/main/java/com/vetcat/reportes/         @Choppers-code/operacion
 
 # ---------- Frontend ----------
 /frontend/                                        @Choppers-code/frontend
