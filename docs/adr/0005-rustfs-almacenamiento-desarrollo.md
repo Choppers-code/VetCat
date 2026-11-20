@@ -2,11 +2,12 @@
 
 | | |
 |---|---|
-| **Estado** | Aceptada |
+| **Estado** | Reemplazada |
 | **Fecha** | 2026-11-12 |
 | **Área** | 5 · Infraestructura, con el área 1 |
 | **Issue** | #49 |
 | **Decide** | En el entorno local los adjuntos van a RustFS (`rustfs/rustfs:1.0.5`) en lugar de MinIO; el backend solo conoce la API S3 |
+| **Reemplazada por** | ADR-0009 (sin almacenamiento de objetos) |
 
 ## Contexto
 
