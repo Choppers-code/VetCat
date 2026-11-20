@@ -28,19 +28,23 @@ VetCat/
 │  │  ├─ tenancy/                 resolver, provider, contexto de tenant     (área 1)
 │  │  ├─ catalogo/                persistencia del esquema global            (área 1)
 │  │  ├─ plataforma/              administración de clínicas                 (área 1)
+│  │  ├─ planes/                  planes, funciones por plan y vigencia      (área 1)
 │  │  ├─ shared/                  sobre de respuesta, errores, auditoría
 │  │  ├─ propietarios/            (área 2)
 │  │  ├─ mascotas/                (área 2)
 │  │  ├─ expediente/              (área 2)
-│  │  ├─ portal/                  backend del portal del dueño               (área 2)
+│  │  ├─ portal/                  backend del portal del cliente             (área 2)
 │  │  ├─ citas/                   (área 3)
 │  │  ├─ vacunas/                 (área 3)
-│  │  └─ facturacion/             (área 3)
+│  │  ├─ facturacion/             ventas, caja y tickets                     (área 3)
+│  │  ├─ notificaciones/          bandeja y push                             (área 3)
+│  │  ├─ inventario/              stock, caducidades y alertas               (área 3)
+│  │  └─ reportes/                (área 3)
 │  ├─ src/main/resources/         `application.yml`, sin SQL
 │  └─ src/test/java/com/vetcat/   pruebas de módulo y transversales
 ├─ frontend/
-│  ├─ apps/vetcat_app/            app Android (iOS después)                  (área 4)
-│  ├─ apps/vetcat_admin/          consola web de administración              (área 4)
+│  ├─ apps/vetcat_app/            app Android única: vistas de veterinario y cliente (área 4)
+│  ├─ apps/vetcat_admin/          consola web: área de la clínica y área de la plataforma (área 4)
 │  └─ packages/
 │     ├─ core/                    modelos, cliente HTTP, sobre de respuesta
 │     └─ ui/                      design system
@@ -68,7 +72,8 @@ VetCat/
 |---|---|
 | Una entidad de negocio | `backend/.../com/vetcat/<módulo>/entity` |
 | Un endpoint | `backend/.../com/vetcat/<módulo>/controller` y su contrato en `docs/api/v1` |
-| Una pantalla | `frontend/apps/vetcat_app/lib/features/<módulo>` |
+| Una pantalla de la app | `frontend/apps/vetcat_app/lib/features/<módulo>`; las vistas por rol van en `features/veterinario/` y `features/cliente/` |
+| Una pantalla de la consola web | `frontend/apps/vetcat_admin/lib/features/<módulo>`, en el área de la clínica o en la de la plataforma |
 | Un widget reutilizable | `frontend/packages/ui` |
 | Una llamada a la API | `frontend/packages/core` |
 | Un cambio de esquema | `database/migrations/<catalogo|tenant>/V<n>__<descripcion>.sql` |
