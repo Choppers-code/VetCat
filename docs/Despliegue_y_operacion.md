@@ -76,7 +76,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 
 ## 5. Migraciones
 
-- Un contenedor one-shot aplica Flyway antes de levantar la API. La API nunca migra.
+- Un contenedor one-shot aplica Flyway antes de levantar la API y migra los esquemas existentes. La API no migra el catálogo ni un esquema ya `aplicada`; solo aplica el historial de tenant al esquema **nuevo** de una clínica recién creada, bajo un advisory lock ([ADR-0010](adr/0010-aprovisionamiento-en-runtime.md)).
 - **Un esquema nuevo no espera a la siguiente ventana.** El aprovisionamiento de la clínica crea el esquema y lo deja en la tabla de estado como pendiente; el runner, que se puede lanzar a demanda, aplica las migraciones a todo tenant pendiente o desactualizado. Que la API no migre no significa que el alta de una clínica se quede sin esquema hasta el próximo despliegue.
 - Regla **expand/contract**: toda migración debe ser compatible con la versión anterior de la app, porque durante el despliegue conviven ambas.
 - El esquema de catálogo se migra una vez; los esquemas de clínica se migran en bucle, con una tabla de estado por tenant para saber cuáles van y reintentar los que fallen.
