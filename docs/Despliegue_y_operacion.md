@@ -24,7 +24,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 |---|---|---|
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
 | `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:8081/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
-| Correo (recuperación de contraseña e invitaciones) | Buzón de correo de pruebas en el compose | Servidor SMTP real, configurado en Keycloak |
+| Correo (recuperación de contraseña e invitaciones) | Mailpit en el compose (UI en `:8025`) | Servidor SMTP real, configurado en Keycloak |
 | Migraciones | `docker compose run --rm migraciones`, antes de arrancar la API | El mismo contenedor, como job previo al despliegue |
 | Logs | Consola | Recolectados y con retención |
 | Secretos | `.env` local, nunca en el repo | Gestor de secretos del proveedor |
@@ -48,6 +48,8 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `KEYCLOAK_MANAGEMENT_PORT` | `9002` | Salud y métricas de Keycloak |
 | `KEYCLOAK_ADMIN` | `admin` | Administrador del realm, para la consola de Keycloak |
 | `KEYCLOAK_ADMIN_PASSWORD` | valor local | Contraseña de ese administrador |
+| `MAILPIT_UI_PORT` | `8025` | UI web del buzón de correo de pruebas |
+| `KEYCLOAK_SMTP_FROM` | `no-reply@vetcat.dev` | Remitente de recuperaciones e invitaciones |
 | `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
@@ -59,6 +61,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | PostgreSQL | `POSTGRES_PORT` (5432) | 5432 | Si ya hay un PostgreSQL local escuchando, cambia la variable |
 | Keycloak | `KEYCLOAK_PORT` (8080) | 8080 | |
 | Keycloak, management | `KEYCLOAK_MANAGEMENT_PORT` (9002) | 9000 | Salud y métricas |
+| Mailpit, UI | `MAILPIT_UI_PORT` (8025) | 8025 | Buzón de correo de pruebas, solo desarrollo |
 | pgAdmin | `PGADMIN_PORT` (5050) | 80 | Solo con `--profile admin` |
 | Consola Flutter Web | 8081 | — | Cuando exista; es el `redirect_uri` local de Keycloak |
 
