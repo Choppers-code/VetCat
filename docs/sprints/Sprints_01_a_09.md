@@ -37,11 +37,11 @@ Es el sprint del plazo (ver [`Plan_de_sprints.md`](../Plan_de_sprints.md) §2). 
 |---|---|---|---|
 | Revisar y aprobar los PR de documentación y de Spec Kit (#87 a #97, #98 a #100, #102 y #103) | `Anton-code-sp` | todos | PR abiertos |
 | Spike: Boot 4.1 y JDK 25 con Security 7, springdoc, Testcontainers y ArchUnit | `Anton-code-sp` | — | #40 |
-| ADR de aprovisionamiento en runtime y de restablecer `search_path` | `Anton-code-sp` | CLI | #15, #16 |
-| Esqueleto del backend: Gradle y Spring Boot | `Carlosss1819` | — | Spike |
-| CI de build y pruebas en cada PR | `Carlosss1819` | — | Esqueleto, #20 |
-| Retirar RustFS del compose y de `.env.example`, y añadir el buzón de correo de pruebas | `Carlosss1819` | IDA | ADR-0009 fusionado |
-| Convención del sobre de respuesta y OpenAPI base | `Raul-Rolu` | RNF | #18 |
+| ADR de aprovisionamiento en runtime y de restablecer `search_path` | `Raul-Rolu` | CLI | #15, #16 |
+| Esqueleto del backend: Gradle y Spring Boot | `Raul-Rolu` | — | Spike |
+| CI de build y pruebas en cada PR | `Anton-code-sp` | — | Esqueleto, #20 |
+| Retirar RustFS del compose y de `.env.example`, y añadir el buzón de correo de pruebas | `Anton-code-sp` | IDA | ADR-0009 fusionado |
+| Convención del sobre de respuesta y OpenAPI base | `Anton-code-sp` | RNF | #18 |
 | Primera especificación real con Spec Kit: la agenda | `ToNyyF1` | AGE | Spec Kit fusionado |
 | Tema del design system: colores, tipografía y espaciado | `Nacho-Nacho3` | — | #60 |
 
@@ -51,9 +51,9 @@ Los días 29 y 30 de noviembre cierran el plazo: revisión del Sprint 4 con el t
 
 | Issue | Responsable | Req. | Depende de |
 |---|---|---|---|
-| Modelo del catálogo: `clinica` y `usuario_clinica` por `(keycloak_id, clinica_id, rol)` | `Anton-code-sp` | CLI, IDA | Spike |
-| Resolver de tenant y proveedor de conexiones con `search_path` que incluye `ext` | `Anton-code-sp` | CLI | Modelo del catálogo |
-| Bucle de migración por esquema de clínica (Flyway y `migracion_tenant`) | `Carlosss1819` | CLI | #55 |
+| Modelo del catálogo: `clinica` y `usuario_clinica` por `(keycloak_id, clinica_id, rol)` | `Raul-Rolu` | CLI, IDA | Spike |
+| Resolver de tenant y proveedor de conexiones con `search_path` que incluye `ext` | `Raul-Rolu` | CLI | Modelo del catálogo |
+| Bucle de migración por esquema de clínica (Flyway y `migracion_tenant`) | `Raul-Rolu` | CLI | #55 |
 | Exigir los checks de CI en el ruleset de `develop` y `main` | `Carlosss1819` | — | CI de build |
 | Cliente HTTP y sobre de respuesta en `vetcat_core` | `Nacho-Nacho3` | RNF | Convención del sobre |
 | Especificar propietarios y mascotas con Spec Kit | `Raul-Rolu` | PRO | — |
