@@ -1,4 +1,4 @@
-﻿# Constituci├│n de VetCat
+# Constituci├│n de VetCat
 
 ## Principios fundamentales
 
@@ -19,7 +19,7 @@ La autorizaci├│n vive en el servidor con `@PreAuthorize`; ocultar pantallas 
 5. C├ílculo de la pr├│xima dosis de vacunas.
 6. Interfaz.
 
-Las pruebas usan JUnit 5 y Testcontainers contra PostgreSQL real, una clase por m├│dulo. Un error corregido empieza con una prueba que falla.
+Las pruebas usan JUnit 6 y Testcontainers 2 contra PostgreSQL real, una clase por m├│dulo. Un error corregido empieza con una prueba que falla.
 
 ### V. Contrato antes que c├│digo, y los contratos no se rompen
 El due├▒o del m├│dulo escribe el contrato OpenAPI antes de la pantalla. La API vive en `/api/v1/...` con un sobre uniforme `{"success": bool, "message": str, "data": ...}` tanto en ├®xito como en error. Un contrato publicado no se rompe: los clientes m├│viles instalados no se actualizan al instante.
@@ -53,4 +53,4 @@ No se a├▒ade una librer├¡a, un patr├│n ni un esquema de nombres que l
 
 Esta constituci├│n prevalece sobre las pr├ícticas informales. Una enmienda se propone por PR, la aprueba el ├írea de arquitectura y actualiza la versi├│n de este archivo. Toda revisi├│n de PR verifica el cumplimiento de estos principios, y una complejidad a├▒adida debe justificarse en el plan (secci├│n "Seguimiento de complejidad"). La gu├¡a diaria de trabajo est├í en `docs/Spec_Kit.md`.
 
-**Versi├│n**: 1.0.0 | **Ratificada**: 2026-11-20 | **├Ültima enmienda**: 2026-11-20
+**Versión**: 1.0.1 | **Ratificada**: 2026-11-20 | **Última enmienda**: 2026-11-20
