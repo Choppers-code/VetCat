@@ -1,6 +1,6 @@
 # Flujo de trabajo
 
-Cómo se mueve el trabajo en VetCat: del issue a la rama, de la rama al PR y del PR al release. Es la guía operativa del día a día; las reglas de arquitectura están en los otros documentos.
+Cómo se mueve el trabajo en VetCat: del issue a la rama, de la rama al PR y del PR al release. Es la guía operativa del día a día; las reglas de arquitectura están en los otros documentos. Cómo se organiza el trabajo en sprints está en [`Scrum.md`](Scrum.md).
 
 ## 1. Las ramas
 
@@ -55,7 +55,7 @@ Formato: `tipo(scope): descripción en español`.
 | `chore` | Configuración, dependencias, infraestructura |
 | `perf` | Mejora de rendimiento |
 
-El `scope` es el paquete del módulo, no el nombre del área: `propietarios`, `mascotas`, `expediente`, `citas`, `vacunas`, `facturacion`, `portal`, `plataforma`, `tenancy`, `frontend`, `docker`.
+El `scope` es el paquete del módulo, no el nombre del área: `propietarios`, `mascotas`, `expediente`, `citas`, `vacunas`, `facturacion`, `portal`, `plataforma`, `tenancy`, `planes`, `notificaciones`, `inventario`, `reportes`, `identidad`, `frontend`, `docker`.
 
 El pie `Refs #23` enlaza el commit con el issue. `Closes #23`, que va en el PR, es lo que lo cierra al fusionar.
 
@@ -144,10 +144,12 @@ git push origin develop
 | Área | El equipo responsable: 1 Arquitectura, 2 Pacientes, 3 Operación, 4 Frontend, 5 Infraestructura |
 | Fase | La fase del roadmap a la que pertenece |
 | Tamaño | S, M, L. Una tarjeta `L` se divide antes de empezar |
+| Sprint | El sprint al que pertenece el issue |
 
 - *Listo* significa criterios de aceptación escritos y, si toca la API, contrato definido. No significa "me toca".
 - El responsable se asigna **a una sola persona**. Los apoyos se piden como revisores del PR, no como co-asignados.
 - Los issues de una fase cuelgan de su épica como sub-issues; la épica se cierra cuando se cierran todas.
+- Un sprint no es un release: el sprint es un periodo de trabajo y el release se corta cuando su milestone está al 100 %.
 
 Vistas: `Tablero` (por estado), `Por persona` (carga real, filtrada a lo no cerrado) y `Por fase`.
 
