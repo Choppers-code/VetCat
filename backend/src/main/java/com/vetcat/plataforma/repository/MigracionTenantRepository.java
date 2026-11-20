@@ -52,6 +52,11 @@ public class MigracionTenantRepository {
         .update();
   }
 
+  /** Quita el registro de un esquema; solo para deshacer un alta fallida. */
+  public void eliminar(String esquema) {
+    jdbc.sql("DELETE FROM catalogo.migracion_tenant WHERE esquema = ?").param(esquema).update();
+  }
+
   /** Esquemas pendientes o fallidos cuyo último movimiento es anterior a la antigüedad dada. */
   public List<String> sinMigrarDesde(Duration antiguedad) {
     return jdbc.sql(
