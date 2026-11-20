@@ -11,6 +11,10 @@ VetCat/
 │  ├─ ISSUE_TEMPLATE/             funcionalidad, ADR, error, mantenimiento
 │  ├─ pull_request_template.md    checklist de Definition of Done
 │  └─ workflows/                  nombre de rama; compilación en la fase 1
+├─ .specify/                      Spec Kit: constitución, plantillas y scripts
+├─ .claude/skills/                comandos de Spec Kit para Claude Code
+├─ .opencode/commands/            comandos de Spec Kit para OpenCode
+├─ specs/                         una carpeta por issue: especificación, plan y tareas
 ├─ docs/
 │  ├─ Alcance.md  Roadmap.md  Decisiones_tecnicas.md
 │  ├─ Tecnologias_y_patrones.md  Equipo_responsabilidades.md
