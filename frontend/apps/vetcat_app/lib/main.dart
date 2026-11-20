@@ -11,6 +11,7 @@ class VetcatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: nombreProducto,
+      theme: VetcatTema.claro,
       home: const PantallaMinima(titulo: '$nombreProducto móvil'),
     );
   }

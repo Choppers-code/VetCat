@@ -1,0 +1,47 @@
+name: frontend
+
+# Build y pruebas del frontend en cada PR. Sin esto, la regla de no fusionar
+# con CI en rojo no existe para el codigo Flutter (docs/Flujo_de_trabajo.md).
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    name: analyze y test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Flutter 3.47.2
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Comprobar la version fijada
+        run: flutter --version
+
+      # El orden importa: core y ui son dependencias por ruta de las apps.
+      - name: Analizar y probar los cuatro proyectos
+        run: |
+          set -euo pipefail
+          for proyecto in \
+            frontend/packages/core \
+            frontend/packages/ui \
+            frontend/apps/vetcat_app \
+            frontend/apps/vetcat_admin; do
+            echo "=== $proyecto ==="
+            (cd "$proyecto" && flutter pub get && flutter analyze && flutter test)
+          done
+
+      - name: Compilar la consola web
+        run: cd frontend/apps/vetcat_admin && flutter build web --release
