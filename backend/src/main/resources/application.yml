@@ -2,3 +2,8 @@
 spring:
   application:
     name: vetcat-backend
+  datasource:
+    url: ${VETCAT_DB_URL:jdbc:postgresql://localhost:5432/vetcat_db}
+    username: ${VETCAT_DB_USER:vetcat}
+    # Sin valor por defecto: la contraseña llega solo por entorno.
+    password: ${VETCAT_DB_PASSWORD}
