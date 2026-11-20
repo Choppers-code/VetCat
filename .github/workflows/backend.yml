@@ -1,0 +1,32 @@
+name: backend
+
+# Build y pruebas del backend cuando exista código. Hoy no hay módulo backend,
+# así que el path filter mantiene el job dormido hasta que se añada el primero.
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'database/**'
+      - '.github/workflows/backend.yml'
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Temurin JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Build y pruebas con Gradle
+        run: cd backend && ./gradlew build --no-daemon
