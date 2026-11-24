@@ -6,7 +6,7 @@
 
 CREATE TABLE catalogo.clinica (
     id                bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    esquema           text        GENERATED ALWAYS AS ('clinica_' || lpad(id::text, 3, '0')) STORED NOT NULL,
+    esquema           text        GENERATED ALWAYS AS ('clinica_' || lpad(id::text, greatest(3, length(id::text)), '0')) STORED NOT NULL,
     nombre            text        NOT NULL,
     correo_contacto   text,
     telefono_contacto text,

@@ -75,6 +75,16 @@ class EsquemaCatalogoTest {
   }
 
   @Test
+  void no_recorta_el_esquema_de_un_id_de_cuatro_cifras() throws SQLException {
+    ejecuta(
+        "INSERT INTO catalogo.clinica (id, nombre, zona_horaria) OVERRIDING SYSTEM VALUE"
+            + " VALUES (1234, 'Cuatro cifras', 'UTC')");
+
+    assertThat(consultaTexto("SELECT esquema FROM catalogo.clinica WHERE id = 1234"))
+        .isEqualTo("clinica_1234");
+  }
+
+  @Test
   void rechaza_que_el_cliente_fije_el_esquema() {
     assertThatThrownBy(
             () ->
