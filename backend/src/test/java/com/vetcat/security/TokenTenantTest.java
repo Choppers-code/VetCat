@@ -23,7 +23,10 @@ class TokenTenantTest {
 
   private static final String CLAVE = "clave-de-prueba-con-mas-de-32-bytes-para-hmac-sha256";
   private static final String OTRA_CLAVE = "otra-clave-de-prueba-con-mas-de-32-bytes-para-hmac";
-  private static final Instant AHORA = Instant.parse("2026-11-24T10:00:00Z");
+  // Relativo a la hora real: el decodificador valida con el reloj del sistema, así que un
+  // instante fijo caduca en cuanto pasa su ventana y la prueba deja de significar nada.
+  private static final Instant AHORA =
+      Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
   private static final String USUARIO = "f1c2d3e4-0000-4000-8000-000000000001";
 
   private TokenTenantProperties propiedades;
