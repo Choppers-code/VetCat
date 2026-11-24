@@ -9,6 +9,8 @@ import 'package:vetcat_core/vetcat_core.dart';
 class AdaptadorFalso implements HttpClientAdapter {
   final List<ResponseBody Function(RequestOptions)> _respuestas = [];
 
+  /// Copia de las cabeceras de cada petición, tal como salieron.
+  final List<Map<String, Object?>> cabeceras = [];
   final List<RequestOptions> peticiones = [];
 
   void responder(int estado, Map<String, Object?> sobre) {
@@ -39,11 +41,35 @@ class AdaptadorFalso implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     peticiones.add(options);
+    cabeceras.add(Map<String, Object?>.of(options.headers));
     return _respuestas.removeAt(0)(options);
   }
 
   @override
   void close({bool force = false}) {}
+}
+
+class TokensFalsos implements ProveedorDeToken {
+  TokensFalsos({this.actual = 'token-viejo', this.alRefrescar = 'token-nuevo'});
+
+  String? actual;
+  final String? alRefrescar;
+  int refrescos = 0;
+  int expiraciones = 0;
+
+  @override
+  Future<String?> token() async => actual;
+
+  @override
+  Future<bool> refrescar() async {
+    refrescos++;
+    if (alRefrescar == null) return false;
+    actual = alRefrescar;
+    return true;
+  }
+
+  @override
+  void sesionExpirada() => expiraciones++;
 }
 
 Map<String, Object?> exito(Object? datos) => {
@@ -60,11 +86,17 @@ Map<String, Object?> fallo(String mensaje) => {
 
 void main() {
   late AdaptadorFalso red;
+  late TokensFalsos tokens;
   late ApiCliente api;
 
   setUp(() {
     red = AdaptadorFalso();
-    api = ApiCliente(urlBase: 'http://api.prueba/api/v1', adaptador: red);
+    tokens = TokensFalsos();
+    api = ApiCliente(
+      urlBase: 'http://api.prueba/api/v1',
+      tokens: tokens,
+      adaptador: red,
+    );
   });
 
   Future<Object?> llamar() =>
@@ -79,6 +111,29 @@ void main() {
     );
 
     expect(nombre, 'Luna');
+  });
+
+  test('adjunta el token y no manda nada que parezca el tenant', () async {
+    red.responder(200, exito(null));
+
+    await llamar();
+
+    final cabeceras = red.cabeceras.single;
+    expect(cabeceras['Authorization'], 'Bearer token-viejo');
+    expect(
+      cabeceras.keys.map((k) => k.toLowerCase()),
+      everyElement(isNot(anyOf(contains('tenant'), contains('clinica')))),
+    );
+    expect(red.peticiones.single.queryParameters, isEmpty);
+  });
+
+  test('sin sesión no manda Authorization', () async {
+    tokens.actual = null;
+    red.responder(200, exito(null));
+
+    await llamar();
+
+    expect(red.cabeceras.single.containsKey('Authorization'), isFalse);
   });
 
   group('errores con el sobre', () {
@@ -137,6 +192,110 @@ void main() {
     );
   });
 
+  group('401 y refresco de sesión', () {
+    test(
+      'refresca una vez, repite una vez con el token nuevo y tiene éxito',
+      () async {
+        red
+          ..responder(401, fallo('Tu sesión venció'))
+          ..responder(200, exito('listo'));
+
+        final resultado = await api.obtener<String>(
+          '/health',
+          convertir: (d) => d as String,
+        );
+
+        expect(resultado, 'listo');
+        expect(tokens.refrescos, 1);
+        expect(tokens.expiraciones, 0);
+        expect(red.cabeceras.map((c) => c['Authorization']), [
+          'Bearer token-viejo',
+          'Bearer token-nuevo',
+        ]);
+      },
+    );
+
+    test(
+      'si el refresco falla, avisa que la sesión expiró y no repite',
+      () async {
+        tokens = TokensFalsos(alRefrescar: null);
+        api = ApiCliente(
+          urlBase: 'http://api.prueba/api/v1',
+          tokens: tokens,
+          adaptador: red,
+        );
+        red.responder(401, fallo('Tu sesión venció'));
+
+        await expectLater(
+          llamar(),
+          throwsA(
+            isA<ErrorDeApi>().having(
+              (e) => e.tipo,
+              'tipo',
+              TipoDeError.noAutenticado,
+            ),
+          ),
+        );
+
+        expect(red.peticiones, hasLength(1));
+        expect(tokens.refrescos, 1);
+        expect(tokens.expiraciones, 1);
+      },
+    );
+
+    test('si tras refrescar sigue el 401, no entra en bucle', () async {
+      red
+        ..responder(401, fallo('Tu sesión venció'))
+        ..responder(401, fallo('Sigue sin valer'));
+
+      await expectLater(
+        llamar(),
+        throwsA(
+          isA<ErrorDeApi>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            'Sigue sin valer',
+          ),
+        ),
+      );
+
+      expect(red.peticiones, hasLength(2));
+      expect(tokens.refrescos, 1);
+      expect(tokens.expiraciones, 1);
+    });
+  });
+
+  test('paginación: lee contenido, página, tamaño y total', () async {
+    red.responder(
+      200,
+      exito({
+        'contenido': [
+          {'id': 1},
+          {'id': 2},
+        ],
+        'pagina': 0,
+        'tamano': 20,
+        'total': 2,
+      }),
+    );
+
+    final pagina = await api.obtenerPagina<int>(
+      '/busqueda',
+      parametros: {'q': 'luna', 'page': 0, 'size': 20},
+      convertir: (e) => (e as Map<String, Object?>)['id'] as int,
+    );
+
+    expect(pagina.contenido, [1, 2]);
+    expect(pagina.pagina, 0);
+    expect(pagina.tamano, 20);
+    expect(pagina.total, 2);
+    expect(red.peticiones.single.queryParameters, {
+      'q': 'luna',
+      'page': 0,
+      'size': 20,
+    });
+  });
+
   test('un data con otra forma de la esperada no revienta la app', () async {
     red.responder(200, exito('texto'));
 
@@ -173,5 +332,12 @@ void main() {
 
     expect(red.peticiones.map((p) => p.method), ['POST', 'PUT']);
     expect(red.peticiones.first.data, {'nombre': 'Ana'});
+  });
+
+  test('desdeEntorno exige la variable API_BASE_URL', () {
+    expect(
+      () => ApiCliente.desdeEntorno(tokens: tokens),
+      throwsA(isA<StateError>()),
+    );
   });
 }

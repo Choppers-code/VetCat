@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 
 import 'error_de_api.dart';
+import 'interceptor_de_sesion.dart';
+import 'pagina.dart';
+import 'proveedor_de_token.dart';
 
 /// Cliente HTTP de la API. Habla el sobre `{success, message, data}`: en éxito
 /// devuelve `data` convertido y en error lanza un [ErrorDeApi]. Lo usan los
@@ -8,6 +11,7 @@ import 'error_de_api.dart';
 class ApiCliente {
   ApiCliente({
     required String urlBase,
+    required ProveedorDeToken tokens,
     HttpClientAdapter? adaptador,
     Duration tiempoDeConexion = const Duration(seconds: 10),
     Duration tiempoDeRespuesta = const Duration(seconds: 20),
@@ -21,17 +25,18 @@ class ApiCliente {
          ),
        ) {
     if (adaptador != null) _dio.httpClientAdapter = adaptador;
+    _dio.interceptors.add(InterceptorDeSesion(_dio, tokens));
   }
 
   /// URL base de `--dart-define=API_BASE_URL`; nunca hay una fija en el código.
-  factory ApiCliente.desdeEntorno() {
+  factory ApiCliente.desdeEntorno({required ProveedorDeToken tokens}) {
     const urlBase = String.fromEnvironment('API_BASE_URL');
     if (urlBase.isEmpty) {
       throw StateError(
         'Falta --dart-define=API_BASE_URL con la URL de la API.',
       );
     }
-    return ApiCliente(urlBase: urlBase);
+    return ApiCliente(urlBase: urlBase, tokens: tokens);
   }
 
   final Dio _dio;
@@ -42,6 +47,17 @@ class ApiCliente {
     Map<String, Object?>? parametros,
     required T Function(Object? datos) convertir,
   }) => solicitar('GET', ruta, parametros: parametros, convertir: convertir);
+
+  /// GET de una colección paginada (`page` y `size` van como parámetros).
+  Future<Pagina<T>> obtenerPagina<T>(
+    String ruta, {
+    Map<String, Object?>? parametros,
+    required T Function(Object? elemento) convertir,
+  }) => obtener(
+    ruta,
+    parametros: parametros,
+    convertir: (datos) => Pagina<T>.desdeJson(datos, convertir),
+  );
 
   /// POST con cuerpo JSON.
   Future<T> enviar<T>(
