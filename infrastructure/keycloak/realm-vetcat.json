@@ -59,12 +59,29 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "frontchannelLogout": true,
-      "redirectUris": ["${VETCAT_APP_REDIRECT_URI:vetcat://callback}"],
+      "redirectUris": [
+        "${VETCAT_APP_REDIRECT_URI:vetcat://callback}"
+      ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "${VETCAT_APP_REDIRECT_URI:vetcat://callback}"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "audiencia vetcat-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "vetcat-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "lightweight.claim": "false"
+          }
+        }
+      ]
     },
     {
       "clientId": "vetcat-admin",
@@ -79,12 +96,31 @@
       "serviceAccountsEnabled": false,
       "frontchannelLogout": true,
       "rootUrl": "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}",
-      "redirectUris": ["${VETCAT_ADMIN_ORIGIN:http://localhost:8081}/admin/callback"],
-      "webOrigins": ["${VETCAT_ADMIN_ORIGIN:http://localhost:8081}"],
+      "redirectUris": [
+        "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}/admin/callback"
+      ],
+      "webOrigins": [
+        "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}/admin/"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "audiencia vetcat-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "vetcat-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "lightweight.claim": "false"
+          }
+        }
+      ]
     }
   ],
   "users": []
