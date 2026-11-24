@@ -3,10 +3,9 @@ name: frontend
 # Build y pruebas del frontend en cada PR. Sin esto, la regla de no fusionar
 # con CI en rojo no existe para el codigo Flutter (docs/Flujo_de_trabajo.md).
 on:
+  # Sin filtro de rutas: el check es obligatorio en develop y, si no corre,
+  # el PR se queda bloqueado esperándolo (docs/Flujo_de_trabajo.md §5).
   pull_request:
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend.yml'
   push:
     branches: [develop]
 

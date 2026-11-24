@@ -4,11 +4,9 @@ name: infra
 # compilado. Sin esto, "no se fusiona con el CI en rojo" no está garantizado
 # para nada (docs/Flujo_de_trabajo.md §4).
 on:
+  # Sin filtro de rutas: el check es obligatorio en develop y, si no corre,
+  # el PR se queda bloqueado esperándolo (docs/Flujo_de_trabajo.md §5).
   pull_request:
-    paths:
-      - 'infrastructure/**'
-      - 'database/**'
-      - '.github/workflows/infra.yml'
 
 permissions:
   contents: read
