@@ -116,6 +116,8 @@ class PersonalClinicaTest {
     assertThat(personal.listar(a)).isEmpty();
     assertThatThrownBy(() -> personal.cambiarRoles(a, enB, Set.of("recepcionista")))
         .isInstanceOf(MiembroNoEncontradoException.class);
+    assertThatThrownBy(() -> personal.desactivar(a, enB))
+        .isInstanceOf(MiembroNoEncontradoException.class);
     assertThat(personal.listar(b))
         .singleElement()
         .extracting(MiembroResponse::estado)
@@ -129,6 +131,8 @@ class PersonalClinicaTest {
     personal.agregar(clinica, unico, Set.of("clinica_admin"));
 
     assertThatThrownBy(() -> personal.cambiarRoles(clinica, unico, Set.of("veterinario")))
+        .isInstanceOf(UltimoAdministradorException.class);
+    assertThatThrownBy(() -> personal.desactivar(clinica, unico))
         .isInstanceOf(UltimoAdministradorException.class);
 
     assertThat(personal.listar(clinica))
@@ -146,6 +150,52 @@ class PersonalClinicaTest {
     MiembroResponse cambiado = personal.cambiarRoles(clinica, uno, Set.of("veterinario"));
 
     assertThat(cambiado.roles()).containsExactly("veterinario");
+  }
+
+  @Test
+  void desactivar_conserva_al_miembro_y_le_impide_abrir_sesion() {
+    long clinica = nuevaClinica();
+    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    UUID vet = UUID.randomUUID();
+    personal.agregar(clinica, vet, Set.of("veterinario", "recepcionista"));
+
+    MiembroResponse inactivo = personal.desactivar(clinica, vet);
+
+    assertThat(inactivo.estado()).isEqualTo("INACTIVO");
+    assertThat(inactivo.roles()).containsExactly("recepcionista", "veterinario");
+    assertThat(membresias.findByKeycloakIdAndClinicaIdAndEstado(vet, clinica, "ACTIVO")).isEmpty();
+
+    assertThat(personal.reactivar(clinica, vet).estado()).isEqualTo("ACTIVO");
+    assertThat(membresias.findByKeycloakIdAndClinicaIdAndEstado(vet, clinica, "ACTIVO")).hasSize(2);
+  }
+
+  @Test
+  void cambiar_los_roles_de_un_desactivado_no_lo_reactiva() {
+    long clinica = nuevaClinica();
+    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    UUID vet = UUID.randomUUID();
+    personal.agregar(clinica, vet, Set.of("veterinario"));
+    personal.desactivar(clinica, vet);
+
+    MiembroResponse cambiado = personal.cambiarRoles(clinica, vet, Set.of("recepcionista"));
+
+    assertThat(cambiado.estado()).isEqualTo("INACTIVO");
+    assertThat(membresias.findByKeycloakIdAndClinicaIdAndEstado(vet, clinica, "ACTIVO")).isEmpty();
+  }
+
+  @Test
+  void no_toca_la_fila_cliente_de_la_misma_persona() {
+    long clinica = nuevaClinica();
+    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    UUID persona = UUID.randomUUID();
+    membresias.save(new UsuarioClinica(persona, clinica, "cliente"));
+    personal.agregar(clinica, persona, Set.of("veterinario"));
+
+    personal.desactivar(clinica, persona);
+
+    assertThat(membresias.findByKeycloakIdAndClinicaIdAndEstado(persona, clinica, "ACTIVO"))
+        .extracting(UsuarioClinica::getRol)
+        .containsExactly("cliente");
   }
 
   @Test
