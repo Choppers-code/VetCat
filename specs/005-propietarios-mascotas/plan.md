@@ -101,7 +101,7 @@ Todos bajo el sobre uniforme y paginados con `page` y `size`.
 
 | Violación | Por qué es necesaria | Alternativa más simple descartada porque |
 |---|---|---|
-| Extensión `unaccent` de PostgreSQL | PRO-009 exige ignorar acentos | Una columna normalizada duplica datos y hay que sincronizarla; se pide que arquitectura lo confirme |
+| Extensión `unaccent` de PostgreSQL | PRO-009 exige ignorar acentos | Una columna normalizada duplica datos y hay que sincronizarla; confirmada por Raúl el 2026-11-23 |
 | Trigger de inmutabilidad en `mascota` | PRO-008 y SC-005: el rechazo debe sostenerse aunque falle la aplicación | Solo validar en el servicio deja un camino abierto a un cambio directo |
 
 ## Plan de PR (400 líneas efectivas o menos cada uno)

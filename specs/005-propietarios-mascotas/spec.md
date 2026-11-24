@@ -149,7 +149,7 @@ Como `recepcionista`, quiero registrar la dirección de un propietario cuando mi
 - La comprobación de la función `visitas_domicilio` (PRO-003) usa la verificación de funciones del plan (PLA-004). Hasta que exista, la historia 5 queda bloqueada y las demás no dependen de ella.
 - El límite de mascotas del plan (PLA-003) se aplica en un issue aparte del sprint 11; aquí solo se deja el registro de mascota listo para recibirlo.
 - La especie sale de una lista cerrada con `OTRA`; la raza es texto libre. El sexo es opcional con los valores `MACHO`, `HEMBRA` y `DESCONOCIDO`. El peso se guarda en kilogramos.
-- Reactivar un propietario **no** reactiva sus mascotas: se reactivan una por una. Es un supuesto a confirmar con el dueño del módulo, porque PRO-004 no lo dice.
+- Reactivar un propietario **no** reactiva sus mascotas: se reactivan una por una. Decisión confirmada por Raúl el 2026-11-23, porque PRO-004 no lo dice.
 - La búsqueda sin acentos usa la extensión `unaccent` de PostgreSQL, instalada una vez en el esquema `ext` desde una migración de catálogo (igual que `btree_gist`).
 - El `cliente` no usa estos endpoints. Su consulta de lo suyo, con verificación de propiedad en cada petición, se especifica con el portal (módulo POR).
 - La pantalla piloto y las pantallas Flutter de propietarios y mascotas son issues de `Nacho-Nacho3`; esta especificación cubre el backend y su contrato.
