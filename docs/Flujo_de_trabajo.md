@@ -69,6 +69,30 @@ El pie `Refs #23` enlaza el commit con el issue. `Closes #23`, que va en el PR, 
 - **Tope de 400 líneas efectivas** — añadidas más borradas, sin contar archivos generados ni migraciones. Un PR más grande no se revisa de verdad: se parte antes de abrirlo.
 - **Nada de refactores de paso.** Si un archivo no aparece en el issue, no va en el PR. Un diff que toca cosas que nadie pidió se devuelve.
 
+### Cuando no cabe en un PR: PR apilados
+
+Si un issue pide más de 400 líneas, se parte en PRs **en serie**: cada uno con su base en la rama del anterior, no todos contra `develop` a la vez.
+
+```text
+PR 1  ->  base: develop
+PR 2  ->  base: rama del PR 1
+PR 3  ->  base: rama del PR 2
+```
+
+- El cuerpo de cada PR dice de qué PR cuelga y qué parte del issue cubre.
+- **Solo se fusiona el de abajo.** Fusionar un PR en la rama intermedia lo marca como fusionado sin que su código llegue a `develop`: pasó con #132 y #133 y hubo que rehacerlos. El servidor lo permite porque las ramas `feature/*` no están protegidas; el flujo no.
+- Al fusionar el de abajo, el de arriba se rebasa y se reapunta a `develop`. El rebase descarta la aprobación y hay que volver a pedirla:
+
+```powershell
+git switch feature/23-parte-2
+git rebase --onto develop <rama-del-pr-1>
+git push --force-with-lease
+gh pr edit <n> --base develop
+```
+
+- **No se borra ninguna rama hasta que la pila entera está en `develop`.** Borrar la base de un PR apilado lo deja sin diff y GitHub puede cerrarlo sin dejar reabrirlo. El repositorio ya no borra ramas al fusionar; se limpian a mano al final, o con `gh pr merge --delete-branch` en el último.
+- **No se trae `develop` a una rama del medio con merge.** El hijo acaba mostrando los cambios del padre en su diff. Se rebasa, como arriba.
+
 ## 5. Lo que el repositorio impide
 
 Estas reglas están activas y sin excepciones: el ruleset no tiene bypass, ni siquiera para administradores.
@@ -192,6 +216,8 @@ No se revisa el formato del código — eso lo hace el formateador — ni el est
 | Los cambios aparecen en `develop` local sin querer | Commiteaste antes de crear la rama | `git switch -c feature/...` arrastra los cambios sin perderlos |
 | El PR tiene conflictos | `develop` avanzó mientras trabajabas | `git switch develop; git pull --ff-only; git switch -; git rebase develop` |
 | El PR tiene 900 líneas y nadie lo revisa | Se acumuló trabajo de varios días en una sola rama | Parte el issue antes de empezar; el tope es 400 líneas |
+| El PR de arriba muestra también los cambios del de abajo | Su base es la rama del PR de abajo y no se rebasó | `git rebase --onto develop <base-vieja>`, luego `gh pr edit <n> --base develop` |
+| GitHub cerró un PR al fusionar otro y no deja reabrirlo | Se borró la rama que era su base | No se borran ramas hasta cerrar la pila; el borrado automático está desactivado |
 
 ## 11. Antes de empezar el día
 
