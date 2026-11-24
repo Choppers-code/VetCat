@@ -107,9 +107,15 @@ services:
       KC_HTTP_ENABLED: "true"
       # Correo de pruebas: Keycloak envía por el SMTP de Mailpit, que resuelve
       # por nombre de servicio dentro del compose. Sin credenciales reales.
+      # No son opciones de Keycloak: las lee `realm-vetcat.json` como
+      # `${KC_SMTP_HOST}` al importar el realm (`smtpServer`).
       KC_SMTP_HOST: mailpit
       KC_SMTP_PORT: "1025"
       KC_SMTP_FROM: ${KEYCLOAK_SMTP_FROM:-no-reply@vetcat.dev}
+      # `redirect_uri` y origen de los dos clientes públicos del realm
+      # (ADR-0004). Cambian por entorno; el realm los lee al importarse.
+      VETCAT_APP_REDIRECT_URI: ${VETCAT_APP_REDIRECT_URI:-vetcat://callback}
+      VETCAT_ADMIN_ORIGIN: ${VETCAT_ADMIN_ORIGIN:-http://localhost:8081}
     ports:
       - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"
       - "127.0.0.1:${KEYCLOAK_MANAGEMENT_PORT:-9002}:9000"

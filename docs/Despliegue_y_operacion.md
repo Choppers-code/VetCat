@@ -50,9 +50,13 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `KEYCLOAK_ADMIN_PASSWORD` | valor local | Contraseña de ese administrador |
 | `MAILPIT_UI_PORT` | `8025` | UI web del buzón de correo de pruebas |
 | `KEYCLOAK_SMTP_FROM` | `no-reply@vetcat.dev` | Remitente de recuperaciones e invitaciones |
+| `VETCAT_APP_REDIRECT_URI` | `vetcat://callback` | `redirect_uri` del cliente `vetcat-app` |
+| `VETCAT_ADMIN_ORIGIN` | `http://localhost:8081` | Origen del cliente `vetcat-admin`: Web Origin y base de su `redirect_uri` |
 | `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
+
+**Realm de Keycloak.** `--import-realm` solo importa `realm-vetcat.json` si el realm `vetcat` todavía no existe. Quien ya levantó el stack antes de un cambio en ese archivo no lo recibe con `up -d`: hay que borrar el realm desde la consola de Keycloak (*Realm settings → Action → Delete*) y reiniciar el servicio con `docker compose -f infrastructure\docker\compose.yaml restart keycloak`. Se pierden los usuarios de prueba de ese realm, nada más.
 
 **Puertos.** Todos se publican en `127.0.0.1`, nunca fuera de la máquina.
 
