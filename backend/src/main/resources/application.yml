@@ -7,3 +7,11 @@ spring:
     username: ${VETCAT_DB_USER:vetcat}
     # Sin valor por defecto: la contraseña llega solo por entorno.
     password: ${VETCAT_DB_PASSWORD}
+
+# Token de tenant (ADR-0003). La clave llega solo por entorno: sin ella la API no arranca.
+vetcat:
+  token:
+    emisor: ${VETCAT_TOKEN_EMISOR:vetcat-api}
+    vigencia: ${VETCAT_TOKEN_VIGENCIA:PT15M}
+    clave: ${VETCAT_TOKEN_CLAVE}
+    kid: ${VETCAT_TOKEN_KID:dev-1}
