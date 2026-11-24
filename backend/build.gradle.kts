@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.hibernate.orm:hibernate-core")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("com.zaxxer:HikariCP")
     runtimeOnly("org.postgresql:postgresql")
 
