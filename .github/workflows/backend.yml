@@ -3,11 +3,9 @@ name: backend
 # Build y pruebas del backend cuando exista codigo. Hoy no hay modulo
 # backend, asi que los pasos se omiten hasta que se anada el primero.
 on:
+  # Sin filtro de rutas: el check es obligatorio en develop y, si no corre,
+  # el PR se queda bloqueado esperándolo (docs/Flujo_de_trabajo.md §5).
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'database/**'
-      - '.github/workflows/backend.yml'
   push:
     branches: [develop]
     paths:
