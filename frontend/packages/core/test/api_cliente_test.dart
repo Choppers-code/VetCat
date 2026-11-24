@@ -49,22 +49,35 @@ class AdaptadorFalso implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+/// Dos tokens, como el ADR-0003: identidad en `/sesion` y `/plataforma`, y el
+/// de clínica en el resto.
 class TokensFalsos implements ProveedorDeToken {
-  TokensFalsos({this.actual = 'token-viejo', this.alRefrescar = 'token-nuevo'});
+  TokensFalsos({this.actual = 'token-viejo', this.alRenovar = 'token-nuevo'});
 
+  /// Token de clínica.
   String? actual;
-  final String? alRefrescar;
-  int refrescos = 0;
+  String identidad = 'token-identidad';
+  final String? alRenovar;
+  final List<String> rutasRenovadas = [];
+  int get renovaciones => rutasRenovadas.length;
   int expiraciones = 0;
 
-  @override
-  Future<String?> token() async => actual;
+  static bool _esDeIdentidad(String ruta) =>
+      ruta.startsWith('/sesion') || ruta.startsWith('/plataforma');
 
   @override
-  Future<bool> refrescar() async {
-    refrescos++;
-    if (alRefrescar == null) return false;
-    actual = alRefrescar;
+  Future<String?> token(String ruta) async =>
+      _esDeIdentidad(ruta) ? identidad : actual;
+
+  @override
+  Future<bool> renovar(String ruta) async {
+    rutasRenovadas.add(ruta);
+    if (alRenovar == null) return false;
+    if (_esDeIdentidad(ruta)) {
+      identidad = alRenovar!;
+    } else {
+      actual = alRenovar;
+    }
     return true;
   }
 
@@ -192,9 +205,39 @@ void main() {
     );
   });
 
-  group('401 y refresco de sesión', () {
+  group('dos tokens según la ruta', () {
+    test('en /sesion va el de identidad y en negocio el de clínica', () async {
+      red
+        ..responder(200, exito(null))
+        ..responder(200, exito(null));
+
+      await api.obtener<Object?>('/sesion/clinicas', convertir: (d) => d);
+      await llamar();
+
+      expect(red.cabeceras.map((c) => c['Authorization']), [
+        'Bearer token-identidad',
+        'Bearer token-viejo',
+      ]);
+    });
+
+    test('un 401 de negocio no se repite con el token de identidad', () async {
+      red
+        ..responder(401, fallo('Tu sesión venció'))
+        ..responder(200, exito('listo'));
+
+      await api.obtener<String>('/health', convertir: (d) => d as String);
+
+      expect(tokens.rutasRenovadas, ['/health']);
+      expect(
+        red.cabeceras.map((c) => c['Authorization']),
+        everyElement(isNot('Bearer token-identidad')),
+      );
+    });
+  });
+
+  group('401 y recuperación de sesión', () {
     test(
-      'refresca una vez, repite una vez con el token nuevo y tiene éxito',
+      'renueva una vez, repite una vez con el token nuevo y tiene éxito',
       () async {
         red
           ..responder(401, fallo('Tu sesión venció'))
@@ -206,7 +249,7 @@ void main() {
         );
 
         expect(resultado, 'listo');
-        expect(tokens.refrescos, 1);
+        expect(tokens.renovaciones, 1);
         expect(tokens.expiraciones, 0);
         expect(red.cabeceras.map((c) => c['Authorization']), [
           'Bearer token-viejo',
@@ -216,9 +259,9 @@ void main() {
     );
 
     test(
-      'si el refresco falla, avisa que la sesión expiró y no repite',
+      'si la renovación falla, avisa que la sesión expiró y no repite',
       () async {
-        tokens = TokensFalsos(alRefrescar: null);
+        tokens = TokensFalsos(alRenovar: null);
         api = ApiCliente(
           urlBase: 'http://api.prueba/api/v1',
           tokens: tokens,
@@ -238,12 +281,12 @@ void main() {
         );
 
         expect(red.peticiones, hasLength(1));
-        expect(tokens.refrescos, 1);
+        expect(tokens.renovaciones, 1);
         expect(tokens.expiraciones, 1);
       },
     );
 
-    test('si tras refrescar sigue el 401, no entra en bucle', () async {
+    test('si tras renovar sigue el 401, no entra en bucle', () async {
       red
         ..responder(401, fallo('Tu sesión venció'))
         ..responder(401, fallo('Sigue sin valer'));
@@ -260,7 +303,7 @@ void main() {
       );
 
       expect(red.peticiones, hasLength(2));
-      expect(tokens.refrescos, 1);
+      expect(tokens.renovaciones, 1);
       expect(tokens.expiraciones, 1);
     });
   });
