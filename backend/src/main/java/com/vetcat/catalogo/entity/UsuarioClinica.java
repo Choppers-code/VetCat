@@ -44,6 +44,10 @@ public class UsuarioClinica {
     this.estado = "ACTIVO";
   }
 
+  public void setEstado(String estado) {
+    this.estado = estado;
+  }
+
   public Long getId() {
     return id;
   }
