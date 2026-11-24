@@ -18,6 +18,9 @@ public interface UsuarioClinicaRepository extends JpaRepository<UsuarioClinica, 
   List<UsuarioClinica> findByKeycloakIdAndClinicaIdAndEstado(
       UUID keycloakId, Long clinicaId, String estado);
 
+  /** Todas las membresías del usuario, para el selector de clínica (IDA-002). */
+  List<UsuarioClinica> findByKeycloakId(UUID keycloakId);
+
   /** Quita todas las membresías de una clínica; solo para deshacer un alta fallida. */
   @Modifying
   @Transactional("catalogoTransactionManager")
