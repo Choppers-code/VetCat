@@ -104,6 +104,7 @@ Estas reglas están activas y sin excepciones: el ruleset no tiene bypass, ni si
 | Borrar la rama en el remoto | Rechazado |
 | Fusionar un PR sin aprobación | Bloqueado |
 | Fusionar sin la aprobación del equipo dueño | Bloqueado |
+| Fusionar con `build y pruebas`, `compose válido`, `analyze y test` o `nombre de rama` en rojo | Bloqueado: los cuatro son checks obligatorios |
 | Aprobar tu propio PR | Imposible: GitHub no lo permite |
 | Subir commits después de la aprobación | La revisión se descarta y hay que volver a pedirla |
 
