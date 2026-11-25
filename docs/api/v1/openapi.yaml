@@ -235,6 +235,384 @@ paths:
         '409':
           $ref: '#/components/responses/Conflicto'
 
+  /citas:
+    get:
+      summary: Consultar la agenda en un rango de fechas (AGE-012).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. Las fechas se
+        interpretan en la zona horaria de la clínica; el veterinario ve su
+        agenda por defecto.
+      operationId: consultarAgenda
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema: {type: string, format: date-time}
+        - name: hasta
+          in: query
+          required: true
+          schema: {type: string, format: date-time}
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+    post:
+      summary: Crear una cita (AGE-001, AGE-003, AGE-016).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. La cita queda
+        PENDIENTE. Devuelve 409 si se empalma con una cita no cancelada y 422
+        si queda fuera del horario, dentro de un bloqueo o el plan no permite
+        visitas a domicilio.
+      operationId: crearCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitaRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /citas/solicitudes:
+    post:
+      summary: Solicitar una cita para una mascota propia (AGE-017, AGE-018).
+      description: >-
+        Rol: cliente. La cita queda PENDIENTE; máximo 3 solicitudes pendientes
+        por cliente. Solo admite citas en consultorio.
+      operationId: solicitarCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudCitaRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /citas/{id}/confirmar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Confirmar una cita pendiente (AGE-004).
+      description: 'Rol: veterinario asignado.'
+      operationId: confirmarCita
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+
+  /citas/{id}/atender:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Marcar como atendida una cita con consulta (AGE-011).
+      description: 'Rol: veterinario asignado.'
+      operationId: atenderCita
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+
+  /citas/{id}/no-asistio:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Marcar que la mascota no asistió (AGE-010).
+      description: 'Rol: veterinario asignado; solo después de la hora de inicio.'
+      operationId: marcarCitaNoAsistio
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /citas/{id}/cancelar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Cancelar una cita con motivo (AGE-007).
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: cancelarCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelarCitaRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /citas/{id}/reprogramar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Reprogramar una cita creando otra pendiente (AGE-006).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. La cita nueva apunta
+        a la original mediante reprogramadaDe y vuelve a confirmarse.
+      operationId: reprogramarCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitaRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /citas/{id}/solicitud-cancelacion:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Solicitar la cancelación de una cita (AGE-008).
+      description: >-
+        Rol: cliente propietario de la mascota. Requiere al menos 5 horas
+        antes del inicio; la cita conserva su estado mientras se resuelve.
+      operationId: solicitarCancelacionCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelarCitaRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /consultorios:
+    get:
+      summary: Consultar consultorios de la clínica.
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: consultarConsultorios
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    post:
+      summary: Crear un consultorio.
+      description: 'Rol: clinica_admin.'
+      operationId: crearConsultorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultorioRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /consultorios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      summary: Editar un consultorio.
+      description: 'Rol: clinica_admin.'
+      operationId: editarConsultorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultorioRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /horarios:
+    get:
+      summary: Consultar horarios de consultorio, incluidos los cambios por fecha.
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: consultarHorariosConsultorio
+      parameters:
+        - name: consultorioId
+          in: query
+          required: false
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    post:
+      summary: Crear un horario semanal o una excepción por fecha.
+      description: 'Rol: clinica_admin.'
+      operationId: crearHorarioConsultorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HorarioConsultorioRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /horarios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      summary: Editar un horario semanal o una excepción.
+      description: 'Rol: clinica_admin.'
+      operationId: editarHorarioConsultorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HorarioConsultorioRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /bloqueos:
+    get:
+      summary: Consultar bloqueos de agenda.
+      description: >-
+        Roles: clinica_admin, veterinario. El veterinario solo consulta los
+        bloqueos de su propia agenda.
+      operationId: consultarBloqueosAgenda
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    post:
+      summary: Crear un bloqueo de agenda.
+      description: >-
+        Roles: clinica_admin, veterinario. El veterinario solo bloquea su
+        propia agenda.
+      operationId: crearBloqueoAgenda
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloqueoAgendaRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
   /busqueda:
     get:
       summary: Buscar propietarios y mascotas sin acentos ni mayúsculas (PRO-009).
@@ -447,6 +825,79 @@ components:
           $ref: '#/components/schemas/PropietarioResponse'
         mascota:
           $ref: '#/components/schemas/MascotaResponse'
+
+    CitaRequest:
+      type: object
+      required: [mascotaId, veterinarioId, tipo, inicio, fin]
+      properties:
+        mascotaId: {type: integer, format: int64}
+        veterinarioId: {type: integer, format: int64}
+        tipo:
+          type: string
+          enum: [CONSULTORIO, DOMICILIO]
+        consultorioId:
+          type: integer
+          format: int64
+          description: Obligatorio para tipo CONSULTORIO y no permitido para DOMICILIO.
+        direccion:
+          type: string
+          maxLength: 300
+          description: Obligatoria para tipo DOMICILIO.
+        inicio: {type: string, format: date-time}
+        fin: {type: string, format: date-time}
+        motivo: {type: string}
+
+    SolicitudCitaRequest:
+      type: object
+      required: [mascotaId, veterinarioId, consultorioId, inicio, fin]
+      properties:
+        mascotaId: {type: integer, format: int64}
+        veterinarioId: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        inicio: {type: string, format: date-time}
+        fin: {type: string, format: date-time}
+        motivo: {type: string}
+
+    CancelarCitaRequest:
+      type: object
+      required: [motivo]
+      properties:
+        motivo: {type: string, minLength: 1}
+
+    ConsultorioRequest:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: {type: string, minLength: 1, maxLength: 100}
+
+    HorarioConsultorioRequest:
+      type: object
+      required: [consultorioId, esCierre]
+      properties:
+        consultorioId: {type: integer, format: int64}
+        diaSemana:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: ISO-8601, de lunes (1) a domingo (7), para un horario semanal.
+        fechaExcepcion:
+          type: string
+          format: date
+          description: Fecha que sustituye el horario semanal de ese consultorio.
+        inicio: {type: string, format: time}
+        fin: {type: string, format: time}
+        esCierre: {type: boolean}
+
+    BloqueoAgendaRequest:
+      type: object
+      required: [inicio, fin, motivo]
+      properties:
+        veterinarioId: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        inicio: {type: string, format: date-time}
+        fin: {type: string, format: date-time}
+        motivo: {type: string, minLength: 1}
+      description: Se debe indicar exactamente uno entre veterinarioId y consultorioId.
 
 
   responses:
