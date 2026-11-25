@@ -34,7 +34,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /** Arranca el contexto con las dos unidades de persistencia contra un PostgreSQL real. */
 @Testcontainers
-@SpringBootTest(properties = "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba")
+@SpringBootTest(
+    properties = {
+      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba",
+      "vetcat.token.clave=clave-de-prueba-con-mas-de-32-bytes-para-hmac"
+    })
 class UnidadesDePersistenciaTest {
 
   @Container
