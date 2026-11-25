@@ -1,11 +1,9 @@
 name: infra
 
-# El compose es lo único de la fase 1 que se puede comprobar sin código
-# compilado. Sin esto, "no se fusiona con el CI en rojo" no está garantizado
-# para nada (docs/Flujo_de_trabajo.md §4).
+# El check `compose válido` es obligatorio en develop, así que se reporta
+# siempre; el trabajo pesado solo corre si el PR toca infraestructura, base de
+# datos o la tabla de variables (docs/Flujo_de_trabajo.md §5).
 on:
-  # Sin filtro de rutas: el check es obligatorio en develop y, si no corre,
-  # el PR se queda bloqueado esperándolo (docs/Flujo_de_trabajo.md §5).
   pull_request:
 
 permissions:
@@ -17,11 +15,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ¿Toca infraestructura o documentación de despliegue?
+        id: toca
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          if git diff --name-only "FETCH_HEAD...HEAD" \
+              | grep -Eq '^(infrastructure/|database/|docs/Despliegue_y_operacion\.md|\.github/workflows/infra\.yml)'; then
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios de infraestructura: el check se cumple sin validar."
+          fi
 
       # `docker compose config` no falla cuando falta una variable: avisa,
       # sustituye por vacío y sale con 0. Por eso se mira la salida además del
       # código de salida; si no, el CI estaría verde con el contrato roto.
       - name: Validar el compose y el contrato de variables
+        if: steps.toca.outputs.hay == 'true'
         run: |
           set -o pipefail
           if ! salida=$(docker compose \
@@ -42,6 +59,7 @@ jobs:
       # `config` tampoco comprueba que el origen de un bind mount exista: si la
       # carpeta se mueve, Docker la crea vacía y Flyway termina "sin migraciones".
       - name: Comprobar que los montajes existen
+        if: steps.toca.outputs.hay == 'true'
         run: |
           montajes=$(docker compose \
             -f infrastructure/docker/compose.yaml \
@@ -62,6 +80,7 @@ jobs:
       # contrato de .env.example. Si alguien añade una variable y no la
       # documenta, este paso lo detecta en vez de dejar la tabla callada.
       - name: Comparar .env.example con la tabla de variables
+        if: steps.toca.outputs.hay == 'true'
         run: |
           set -euo pipefail
           entorno=$(grep -oE '^[A-Z][A-Z0-9_]*=' infrastructure/docker/.env.example \

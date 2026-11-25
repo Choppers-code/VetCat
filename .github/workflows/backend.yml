@@ -1,10 +1,10 @@
 name: backend
 
-# Build y pruebas del backend cuando exista codigo. Hoy no hay modulo
-# backend, asi que los pasos se omiten hasta que se anada el primero.
+# El check `build y pruebas` es obligatorio en develop, así que se reporta
+# siempre; lo que se salta es el trabajo pesado cuando el PR no toca sus rutas.
+# Si no se reportara, un PR de documentación quedaría bloqueado esperándolo
+# para siempre (docs/Flujo_de_trabajo.md §5).
 on:
-  # Sin filtro de rutas: el check es obligatorio en develop y, si no corre,
-  # el PR se queda bloqueado esperándolo (docs/Flujo_de_trabajo.md §5).
   pull_request:
   push:
     branches: [develop]
@@ -22,10 +22,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # hashFiles solo es valido en steps[*].if, no en jobs.<id>.if.
+      - name: ¿Toca backend o base de datos?
+        id: toca
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          if git diff --name-only "FETCH_HEAD...HEAD" \
+              | grep -Eq '^(backend/|database/|\.github/workflows/backend\.yml)'; then
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en backend ni database: el check se cumple sin compilar."
+          fi
+
+      # hashFiles solo es válido en steps[*].if, no en jobs.<id>.if.
       - name: Instalar Temurin JDK 25
-        if: hashFiles('backend/gradlew') != ''
+        if: steps.toca.outputs.hay == 'true' && hashFiles('backend/gradlew') != ''
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -33,5 +51,5 @@ jobs:
           cache: gradle
 
       - name: Build y pruebas con Gradle
-        if: hashFiles('backend/gradlew') != ''
+        if: steps.toca.outputs.hay == 'true' && hashFiles('backend/gradlew') != ''
         run: cd backend && ./gradlew build --no-daemon
