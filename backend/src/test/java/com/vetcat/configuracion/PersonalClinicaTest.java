@@ -38,7 +38,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * Personal de la clínica con varios roles contra PostgreSQL real y dos clínicas (CON-002 a 004).
  */
 @Testcontainers
-@SpringBootTest(properties = "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba")
+@SpringBootTest(
+    properties = {
+      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba",
+      "vetcat.token.clave=clave-de-prueba-con-mas-de-32-bytes-para-hmac"
+    })
 class PersonalClinicaTest {
 
   @Container
