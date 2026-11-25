@@ -3,7 +3,9 @@
   "enabled": true,
   "displayName": "VetCat",
   "sslRequired": "external",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "verifyEmail": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
@@ -13,9 +15,115 @@
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
-  "clients": [],
-  "roles": {
-    "realm": []
+  "smtpServer": {
+    "host": "${KC_SMTP_HOST}",
+    "port": "${KC_SMTP_PORT}",
+    "from": "${KC_SMTP_FROM}",
+    "fromDisplayName": "VetCat",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
   },
+  "roles": {
+    "realm": [
+      {
+        "name": "super_admin",
+        "description": "Plataforma: aprovisiona clínicas y da soporte. Único rol que se toma del realm (ADR-0003)."
+      },
+      {
+        "name": "clinica_admin",
+        "description": "Catálogo de valores. La asignación real por clínica vive en catalogo.usuario_clinica (ADR-0006)."
+      },
+      {
+        "name": "veterinario",
+        "description": "Catálogo de valores. La asignación real por clínica vive en catalogo.usuario_clinica (ADR-0006)."
+      },
+      {
+        "name": "recepcionista",
+        "description": "Catálogo de valores. La asignación real por clínica vive en catalogo.usuario_clinica (ADR-0006)."
+      },
+      {
+        "name": "cliente",
+        "description": "Catálogo de valores. La asignación real por clínica vive en catalogo.usuario_clinica (ADR-0006)."
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "vetcat-app",
+      "name": "VetCat · app Android",
+      "description": "Cliente público con PKCE para la app móvil (veterinario y cliente). Sin secreto.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "${VETCAT_APP_REDIRECT_URI:vetcat://callback}"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${VETCAT_APP_REDIRECT_URI:vetcat://callback}"
+      },
+      "protocolMappers": [
+        {
+          "name": "audiencia vetcat-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "vetcat-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "lightweight.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "vetcat-admin",
+      "name": "VetCat · consola web",
+      "description": "Cliente público con PKCE para la consola Flutter Web (clinica_admin, recepcionista y super_admin). Sin secreto.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "rootUrl": "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}",
+      "redirectUris": [
+        "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}/admin/callback"
+      ],
+      "webOrigins": [
+        "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${VETCAT_ADMIN_ORIGIN:http://localhost:8081}/admin/"
+      },
+      "protocolMappers": [
+        {
+          "name": "audiencia vetcat-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "vetcat-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "lightweight.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
   "users": []
 }
