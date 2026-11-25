@@ -6,11 +6,11 @@ Regla: primero la base y la concurrencia; después la lógica. Cada tarea cabe e
 
 ## Fase 0 — Base (#189)
 
-- [X] **T001** `tenant/V2`: `consultorio`, `horario_consultorio`, `bloqueo_agenda`, `cita`, con los dos `EXCLUDE` y el `btree_gist` de `ext`.
-- [X] **T002** `[P]` Prueba de esquema: dos filas solapadas del mismo consultorio se rechazan; una cancelada no bloquea.
-- [X] **T003** `[P]` Prueba de esquema: el segundo `EXCLUDE` rechaza el solape del mismo veterinario en consultorios distintos.
-- [X] **T004** Entidades JPA en la unidad `tenant` y validación contra el esquema.
-- [X] **T005** Paths del contrato en `openapi.yaml`.
+- [ ] **T001** `tenant/V2`: `consultorio`, `horario_consultorio`, `bloqueo_agenda`, `cita`, con los dos `EXCLUDE` y el `btree_gist` de `ext`.
+- [ ] **T002** `[P]` Prueba de esquema: dos filas solapadas del mismo consultorio se rechazan; una cancelada no bloquea.
+- [ ] **T003** `[P]` Prueba de esquema: el segundo `EXCLUDE` rechaza el solape del mismo veterinario en consultorios distintos.
+- [ ] **T004** Entidades JPA en la unidad `tenant` y validación contra el esquema.
+- [ ] **T005** Paths del contrato en `openapi.yaml`.
 
 ## Fase 1 — Consultorios y horarios (#191)
 
