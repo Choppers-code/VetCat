@@ -66,7 +66,9 @@ El pie `Refs #23` enlaza el commit con el issue. `Closes #23`, que va en el PR, 
 - El cuerpo completa la plantilla: qué cambia, issue, checklist de Definition of Done y riesgo.
 - No se fusiona con el CI en rojo ni con la revisión pedida pendiente.
 - Método de merge: **squash**. Deja un commit por issue y evita el ruido de las ramas.
-- **Tope de 400 líneas efectivas** — añadidas más borradas, sin contar archivos generados ni migraciones. Un PR más grande no se revisa de verdad: se parte antes de abrirlo.
+- **Presupuesto de revisión, no de líneas.** Por defecto, 400 líneas efectivas — añadidas más borradas, sin contar archivos generados ni migraciones. Un PR puede llegar a **800** si trae las tres cosas: una **guía de revisión de diez líneas** (qué mirar, qué es mecánico, qué decisión se pide), las pruebas de aislamiento y autorización, y un solo issue. Sin la guía, o por encima de 800, se parte antes de abrirlo.
+- **Se rebasa antes de pedir revisión, no después.** Un push o un cambio de base descarta la aprobación: pedir revisión sobre una rama desactualizada obliga a pedirla dos veces.
+- **La migración se reserva en el issue.** Al abrir el issue que crea una migración se anota su número (`catalogo/V6`, `tenant/V2`). Dos PRs abiertos no comparten versión: Flyway no aplica migraciones fuera de orden y una base ya migrada se queda atrás.
 - **Nada de refactores de paso.** Si un archivo no aparece en el issue, no va en el PR. Un diff que toca cosas que nadie pidió se devuelve.
 
 ### Cuando no cabe en un PR: PR apilados

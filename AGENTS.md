@@ -50,7 +50,7 @@ One Android app for `veterinario` and `cliente` (Android first, mobile-first) + 
 - Tests: JUnit 6 + Testcontainers 2 against real PostgreSQL, one class per module. A bug fix starts with a failing test.
 - Do not add a library, a pattern or a naming scheme these docs don't have. If it is needed, open an issue for the architect — never decide it inside a feature PR.
 - Shared files have one owner and are never touched "while I'm here": `AGENTS.md`, `README.md`, `.github/`, build files, `infrastructure/docker/compose.yaml`, `database/`, `infrastructure/`. Change them in their own PR.
-- One PR, one issue, at most 400 effective lines (added + removed). More than that means it is not a single change.
+- One PR, one issue. Up to 400 effective lines (added + removed) by default; up to 800 only with a ten-line review guide (what to look at, what is mechanical, which decision is being asked), the isolation and authorization tests, and a single issue. Without the guide, it is not a single change — split it. `docs/Flujo_de_trabajo.md` §4 has the detail.
 
 ## Scope guard
 
