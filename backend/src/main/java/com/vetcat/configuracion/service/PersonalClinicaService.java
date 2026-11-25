@@ -71,6 +71,28 @@ public class PersonalClinicaService {
     return aplicar(clinicaId, keycloakId, roles, true);
   }
 
+  /** Impide el acceso a la clínica conservando al miembro y sus roles (CON-004). */
+  public MiembroResponse desactivar(long clinicaId, UUID keycloakId) {
+    return cambiarEstado(clinicaId, keycloakId, INACTIVO);
+  }
+
+  public MiembroResponse reactivar(long clinicaId, UUID keycloakId) {
+    return cambiarEstado(clinicaId, keycloakId, ACTIVO);
+  }
+
+  private MiembroResponse cambiarEstado(long clinicaId, UUID keycloakId, String estado) {
+    bloquear(clinicaId);
+    long administradoresAntes = administradoresActivos(clinicaId);
+    List<UsuarioClinica> filas = filasDelMiembro(clinicaId, keycloakId);
+    if (filas.isEmpty()) {
+      throw new MiembroNoEncontradoException();
+    }
+    filas.forEach(f -> f.setEstado(estado));
+    membresias.saveAllAndFlush(filas);
+    exigirAdministrador(clinicaId, administradoresAntes);
+    return aMiembro(keycloakId, filas);
+  }
+
   private MiembroResponse aplicar(
       long clinicaId, UUID keycloakId, Set<String> roles, boolean debeExistir) {
     long administradoresAntes = administradoresActivos(clinicaId);
