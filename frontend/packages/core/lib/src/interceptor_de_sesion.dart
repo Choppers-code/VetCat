@@ -2,8 +2,9 @@ import 'package:dio/dio.dart';
 
 import 'proveedor_de_token.dart';
 
-/// Único interceptor del cliente: adjunta el token y, ante un 401, refresca la
-/// sesión una sola vez y repite la petición una sola vez.
+/// Único interceptor del cliente: adjunta el token que toca según la ruta y,
+/// ante un 401, pide recuperar la sesión una sola vez y repite la petición una
+/// sola vez. Qué token usar y cómo recuperarlo lo decide el proveedor.
 ///
 /// No registra nada: el token no debe aparecer en ningún registro. Tampoco
 /// añade el tenant: viaja dentro del token, nunca en la petición.
@@ -15,7 +16,7 @@ class InterceptorDeSesion extends Interceptor {
   final Dio _dio;
   final ProveedorDeToken _tokens;
 
-  /// Refresco en curso, para que varias peticiones con 401 compartan uno solo.
+  /// Renovación en curso, para que varias peticiones con 401 compartan una.
   Future<bool>? _refresco;
 
   @override
@@ -23,7 +24,7 @@ class InterceptorDeSesion extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await _tokens.token();
+    final token = await _tokens.token(options.path);
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -46,7 +47,7 @@ class InterceptorDeSesion extends Interceptor {
       handler.next(err);
       return;
     }
-    final renovado = await (_refresco ??= _renovar());
+    final renovado = await (_refresco ??= _renovar(peticion.path));
     if (!renovado) {
       _tokens.sesionExpirada();
       handler.next(err);
@@ -60,9 +61,9 @@ class InterceptorDeSesion extends Interceptor {
     }
   }
 
-  Future<bool> _renovar() async {
+  Future<bool> _renovar(String ruta) async {
     try {
-      return await _tokens.refrescar();
+      return await _tokens.renovar(ruta);
     } on Object {
       return false;
     } finally {
