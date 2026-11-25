@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vetcat_core/vetcat_core.dart';
 
+import '../features/sesion/raiz_de_clinica.dart';
 import 'controlador_de_sesion.dart';
 
 /// Mismo texto para cualquier fallo: no distingue si el correo existe.
@@ -18,7 +19,7 @@ class RaizDeSesion extends ConsumerWidget {
     return switch (ref.watch(sesionProvider)) {
       Cargando() => const PantallaDeCarga(),
       SinSesion(:final fallo) => PantallaDeAcceso(fallo: fallo),
-      ConSesion() => const PantallaProvisional(),
+      ConSesion() => const RaizDeClinica(),
     };
   }
 }
@@ -67,30 +68,6 @@ class PantallaDeAcceso extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Sustituye al selector de clínica (#153) hasta que exista.
-class PantallaProvisional extends ConsumerWidget {
-  const PantallaProvisional({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Sesión iniciada'),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () => ref.read(sesionProvider.notifier).cerrar(),
-              child: const Text('Cerrar sesión'),
-            ),
-          ],
         ),
       ),
     );
