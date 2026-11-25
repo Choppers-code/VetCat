@@ -235,6 +235,261 @@ paths:
         '409':
           $ref: '#/components/responses/Conflicto'
 
+  /citas:
+    get:
+      summary: Consultar la agenda por rango (AGE-012).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. Las fechas se
+        interpretan en la zona horaria de la clínica; el veterinario solo ve
+        las citas de su propia agenda.
+      operationId: consultarAgenda
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          description: Inicio del rango, en la zona horaria de la clínica.
+          schema:
+            type: string
+            format: date-time
+        - name: hasta
+          in: query
+          required: true
+          description: Fin exclusivo del rango, en la zona horaria de la clínica.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          $ref: '#/components/responses/Agenda'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+    post:
+      summary: Crear una cita en consultorio (AGE-001, AGE-002, AGE-003).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. La cita nace
+        PENDIENTE. El veterinario solo puede crear citas en su propia agenda.
+        Devuelve 409 si la restricción de exclusión detecta un empalme y 422
+        si la franja está fuera de horario, bloqueada o los datos no pertenecen
+        a la clínica activa. La zona horaria se obtiene de la clínica.
+      operationId: crearCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitaRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CitaFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /consultorios:
+    get:
+      summary: Consultar los consultorios de la clínica.
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: listarConsultorios
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    post:
+      summary: Registrar un consultorio (AGE-012).
+      description: 'Rol: clinica_admin.'
+      operationId: registrarConsultorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultorioRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /consultorios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      summary: Editar un consultorio.
+      description: 'Rol: clinica_admin.'
+      operationId: editarConsultorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultorioRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /horarios:
+    get:
+      summary: Consultar horarios de consultorio (AGE-013).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. Las horas se
+        interpretan en la zona horaria de la clínica; una excepción por fecha
+        sustituye el horario semanal de ese consultorio para ese día.
+      operationId: consultarHorarios
+      parameters:
+        - name: consultorioId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    post:
+      summary: Registrar un horario semanal o una excepción por fecha.
+      description: 'Rol: clinica_admin. Las horas se interpretan en la zona de la clínica.'
+      operationId: registrarHorario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HorarioRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /horarios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      summary: Editar un horario semanal o una excepción por fecha.
+      description: 'Rol: clinica_admin. Las horas se interpretan en la zona de la clínica.'
+      operationId: editarHorario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HorarioRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /bloqueos:
+    get:
+      summary: Consultar bloqueos de agenda.
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. El veterinario solo
+        puede consultar los bloqueos de su propia agenda.
+      operationId: consultarBloqueos
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: hasta
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: consultorioId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: veterinarioId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+    post:
+      summary: Registrar un bloqueo por veterinario o consultorio (AGE-002).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. Un veterinario solo
+        puede bloquear su propia agenda. Los intervalos usan la zona horaria
+        de la clínica; no se modifican las citas existentes.
+      operationId: registrarBloqueo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloqueoRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/JsonExito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
   /busqueda:
     get:
       summary: Buscar propietarios y mascotas sin acentos ni mayúsculas (PRO-009).
@@ -448,6 +703,121 @@ components:
         mascota:
           $ref: '#/components/schemas/MascotaResponse'
 
+    CitaRequest:
+      type: object
+      required: [mascotaId, veterinarioId, consultorioId, inicio]
+      properties:
+        mascotaId: {type: integer, format: int64}
+        veterinarioId: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        inicio:
+          type: string
+          format: date-time
+          description: Fecha y hora de inicio con desplazamiento; se valida en la zona de la clínica.
+        duracionMinutos:
+          type: integer
+          minimum: 1
+          description: Duración ajustable; si se omite se usa el valor por defecto de la clínica.
+        motivo: {type: string, maxLength: 500}
+
+    CitaResponse:
+      type: object
+      required: [id, mascotaId, veterinarioId, consultorioId, inicio, fin, estado]
+      properties:
+        id: {type: integer, format: int64}
+        mascotaId: {type: integer, format: int64}
+        veterinarioId: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        inicio: {type: string, format: date-time}
+        fin: {type: string, format: date-time}
+        estado:
+          type: string
+          enum: [PENDIENTE, CONFIRMADA, ATENDIDA, NO_ASISTIO, CANCELADA]
+        motivo: {type: string}
+
+    ConsultorioRequest:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: {type: string, minLength: 1, maxLength: 100}
+
+    ConsultorioResponse:
+      type: object
+      required: [id, nombre, activo]
+      properties:
+        id: {type: integer, format: int64}
+        nombre: {type: string}
+        activo: {type: boolean}
+
+    HorarioRequest:
+      type: object
+      required: [consultorioId, horaInicio, horaFin]
+      properties:
+        consultorioId: {type: integer, format: int64}
+        diaSemana:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Día semanal ISO-8601 (1 lunes, 7 domingo); excluyente con fecha.
+        fecha:
+          type: string
+          format: date
+          description: Excepción para esta fecha, que sustituye el horario semanal.
+        horaInicio: {type: string, format: time}
+        horaFin: {type: string, format: time}
+      oneOf:
+        - required: [diaSemana]
+          not:
+            required: [fecha]
+        - required: [fecha]
+          not:
+            required: [diaSemana]
+
+    HorarioResponse:
+      type: object
+      required: [id, consultorioId, horaInicio, horaFin]
+      properties:
+        id: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        diaSemana: {type: integer, minimum: 1, maximum: 7}
+        fecha: {type: string, format: date}
+        horaInicio: {type: string, format: time}
+        horaFin: {type: string, format: time}
+
+    BloqueoRequest:
+      type: object
+      required: [inicio, fin, motivo]
+      properties:
+        veterinarioId: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        inicio:
+          type: string
+          format: date-time
+          description: Inicio inclusivo en la zona horaria de la clínica.
+        fin:
+          type: string
+          format: date-time
+          description: Fin exclusivo en la zona horaria de la clínica.
+        motivo: {type: string, minLength: 1, maxLength: 500}
+      oneOf:
+        - required: [veterinarioId]
+          not:
+            required: [consultorioId]
+        - required: [consultorioId]
+          not:
+            required: [veterinarioId]
+
+    BloqueoResponse:
+      type: object
+      required: [id, inicio, fin, motivo]
+      properties:
+        id: {type: integer, format: int64}
+        veterinarioId: {type: integer, format: int64}
+        consultorioId: {type: integer, format: int64}
+        inicio: {type: string, format: date-time}
+        fin: {type: string, format: date-time}
+        motivo: {type: string}
+
 
   responses:
     PropietarioFicha:
@@ -490,6 +860,30 @@ components:
                             type: array
                             items:
                               $ref: '#/components/schemas/ResultadoBusqueda'
+    Agenda:
+      description: Citas del rango solicitado, en la zona horaria de la clínica.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CitaResponse'
+    CitaFicha:
+      description: Cita creada.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CitaResponse'
     NoEncontrado:
       description: No existe en la clínica del token (también si es de otra clínica).
       content:
