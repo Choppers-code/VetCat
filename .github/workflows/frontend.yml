@@ -1,10 +1,9 @@
 name: frontend
 
-# Build y pruebas del frontend en cada PR. Sin esto, la regla de no fusionar
-# con CI en rojo no existe para el codigo Flutter (docs/Flujo_de_trabajo.md).
+# El check `analyze y test` es obligatorio en develop, así que se reporta
+# siempre; el trabajo pesado solo corre si el PR toca el frontend. Así un PR
+# de backend no paga un `flutter analyze` (docs/Flujo_de_trabajo.md §5).
 on:
-  # Sin filtro de rutas: el check es obligatorio en develop y, si no corre,
-  # el PR se queda bloqueado esperándolo (docs/Flujo_de_trabajo.md §5).
   pull_request:
   push:
     branches: [develop]
@@ -18,8 +17,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ¿Toca el frontend?
+        id: toca
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          if git diff --name-only "FETCH_HEAD...HEAD" \
+              | grep -Eq '^(frontend/|\.github/workflows/frontend\.yml)'; then
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en frontend: el check se cumple sin analizar."
+          fi
 
       - name: Instalar Flutter 3.47.2
+        if: steps.toca.outputs.hay == 'true'
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.2'
@@ -27,10 +45,12 @@ jobs:
           cache: true
 
       - name: Comprobar la version fijada
+        if: steps.toca.outputs.hay == 'true'
         run: flutter --version
 
       # El orden importa: core y ui son dependencias por ruta de las apps.
       - name: Analizar y probar los cuatro proyectos
+        if: steps.toca.outputs.hay == 'true'
         run: |
           set -euo pipefail
           for proyecto in \
@@ -43,4 +63,5 @@ jobs:
           done
 
       - name: Compilar la consola web
+        if: steps.toca.outputs.hay == 'true'
         run: cd frontend/apps/vetcat_admin && flutter build web --release
