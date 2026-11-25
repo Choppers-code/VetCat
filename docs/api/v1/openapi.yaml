@@ -28,6 +28,247 @@ paths:
         '422':
           $ref: '#/components/responses/EntradaInvalida'
 
+  /propietarios:
+    post:
+      summary: Registrar un propietario (PRO-001).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. Devuelve 409 si ya
+        existe un propietario con el mismo teléfono y la petición no trae
+        confirmarDuplicado. La dirección solo se acepta si el plan incluye
+        visitas_domicilio (422 en caso contrario).
+      operationId: registrarPropietario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropietarioRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/PropietarioFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /propietarios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Ficha del propietario con sus mascotas activas (PRO-002).
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: consultarPropietario
+      responses:
+        '200':
+          $ref: '#/components/responses/PropietarioFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    put:
+      summary: Editar los datos de un propietario (PRO-002).
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: editarPropietario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropietarioRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/PropietarioFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /propietarios/{id}/baja:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Dar de baja a un propietario y a sus mascotas (PRO-004).
+      description: >-
+        Rol: clinica_admin. Nada se borra. Devuelve 409 con las citas futuras
+        si las hay, y no da de baja.
+      operationId: darDeBajaPropietario
+      responses:
+        '200':
+          $ref: '#/components/responses/PropietarioFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+
+  /propietarios/{id}/reactivar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Reactivar un propietario; sus mascotas no se reactivan (PRO-004).
+      description: 'Rol: clinica_admin.'
+      operationId: reactivarPropietario
+      responses:
+        '200':
+          $ref: '#/components/responses/PropietarioFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+  /mascotas:
+    post:
+      summary: Registrar una mascota de un propietario (PRO-005).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. 422 por fecha futura,
+        peso no positivo o especie fuera de la lista; 404 si el propietario es
+        de otra clínica o está inactivo.
+      operationId: registrarMascota
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MascotaRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/MascotaFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /mascotas/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Ficha de datos generales de la mascota (PRO-006).
+      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      operationId: consultarMascota
+      responses:
+        '200':
+          $ref: '#/components/responses/MascotaFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    put:
+      summary: Editar una mascota; el propietario no cambia (PRO-008).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. El cuerpo no admite
+        propietarioId.
+      operationId: editarMascota
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MascotaActualizacionRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MascotaFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
+  /mascotas/{id}/baja:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Dar de baja a una mascota (PRO-004).
+      description: 'Rol: clinica_admin. 409 con las citas futuras si las hay.'
+      operationId: darDeBajaMascota
+      responses:
+        '200':
+          $ref: '#/components/responses/MascotaFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+
+  /mascotas/{id}/reactivar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Reactivar una mascota cuyo propietario está activo (PRO-004).
+      description: 'Rol: clinica_admin.'
+      operationId: reactivarMascota
+      responses:
+        '200':
+          $ref: '#/components/responses/MascotaFicha'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+
+  /busqueda:
+    get:
+      summary: Buscar propietarios y mascotas sin acentos ni mayúsculas (PRO-009).
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. incluirInactivos solo
+        lo admite clinica_admin (403 para los demás). 422 si q tiene menos de 3
+        caracteres.
+      operationId: buscar
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Texto a buscar, de 3 caracteres o más.
+          schema:
+            type: string
+            minLength: 3
+        - name: incluirInactivos
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          $ref: '#/components/responses/Busqueda'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '422':
+          $ref: '#/components/responses/EntradaInvalida'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -36,6 +277,13 @@ components:
       bearerFormat: JWT
 
   parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
     Page:
       name: page
       in: query
@@ -98,7 +346,156 @@ components:
         total:
           type: integer
 
+    PropietarioRequest:
+      type: object
+      required: [nombre, telefono]
+      properties:
+        nombre: {type: string, maxLength: 150}
+        telefono: {type: string, maxLength: 30}
+        correo: {type: string, format: email}
+        direccion:
+          type: string
+          maxLength: 300
+          description: Solo si el plan incluye visitas_domicilio.
+        confirmarDuplicado:
+          type: boolean
+          default: false
+          description: Crea el propietario aunque el teléfono ya exista.
+
+    PropietarioResponse:
+      type: object
+      required: [id, nombre, telefono, activo, mascotas]
+      properties:
+        id: {type: integer, format: int64}
+        nombre: {type: string}
+        telefono: {type: string}
+        correo: {type: string}
+        direccion: {type: string}
+        activo: {type: boolean}
+        mascotas:
+          type: array
+          description: Mascotas activas del propietario.
+          items:
+            $ref: '#/components/schemas/MascotaResponse'
+
+    MascotaDatos:
+      type: object
+      required: [nombre, especie]
+      properties:
+        nombre: {type: string, maxLength: 100}
+        especie:
+          $ref: '#/components/schemas/Especie'
+        raza: {type: string, maxLength: 100}
+        sexo:
+          $ref: '#/components/schemas/Sexo'
+        fechaNacimiento:
+          type: string
+          format: date
+          description: No puede ser futura.
+        pesoKg: {type: number, exclusiveMinimum: 0, maximum: 9999.99}
+        notas: {type: string}
+
+    MascotaRequest:
+      description: Datos de la mascota y su propietario, que ya no cambia (PRO-008).
+      allOf:
+        - $ref: '#/components/schemas/MascotaDatos'
+        - type: object
+          required: [propietarioId]
+          properties:
+            propietarioId:
+              type: integer
+              format: int64
+
+    MascotaActualizacionRequest:
+      description: Igual que MascotaDatos; no admite propietarioId.
+      allOf:
+        - $ref: '#/components/schemas/MascotaDatos'
+        - type: object
+          not:
+            required: [propietarioId]
+
+    MascotaResponse:
+      type: object
+      required: [id, propietarioId, nombre, especie, activo]
+      properties:
+        id: {type: integer, format: int64}
+        propietarioId: {type: integer, format: int64}
+        nombre: {type: string}
+        especie:
+          $ref: '#/components/schemas/Especie'
+        raza: {type: string}
+        sexo:
+          $ref: '#/components/schemas/Sexo'
+        fechaNacimiento: {type: string, format: date}
+        pesoKg: {type: number}
+        notas: {type: string}
+        activo: {type: boolean}
+
+    Especie:
+      type: string
+      enum: [PERRO, GATO, AVE, ROEDOR, REPTIL, OTRA]
+
+    Sexo:
+      type: string
+      enum: [MACHO, HEMBRA, DESCONOCIDO]
+
+    ResultadoBusqueda:
+      type: object
+      required: [propietario]
+      properties:
+        propietario:
+          $ref: '#/components/schemas/PropietarioResponse'
+        mascota:
+          $ref: '#/components/schemas/MascotaResponse'
+
+
   responses:
+    PropietarioFicha:
+      description: Ficha del propietario.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PropietarioResponse'
+    MascotaFicha:
+      description: Ficha de la mascota.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MascotaResponse'
+    Busqueda:
+      description: Resultados paginados, con el propietario junto a cada mascota.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/Paginacion'
+                      - type: object
+                        properties:
+                          contenido:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ResultadoBusqueda'
+    NoEncontrado:
+      description: No existe en la clínica del token (también si es de otra clínica).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     JsonExito:
       description: Operación correcta.
       content:
