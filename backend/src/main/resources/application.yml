@@ -2,6 +2,10 @@
 spring:
   application:
     name: vetcat-backend
+  # Sin sesión de Hibernate abierta en la vista: el proyecto tiene dos unidades de persistencia
+  # y ninguna debe resolver un EntityManager por defecto.
+  jpa:
+    open-in-view: false
   datasource:
     url: ${VETCAT_DB_URL:jdbc:postgresql://localhost:5432/vetcat_db}
     username: ${VETCAT_DB_USER:vetcat}
@@ -15,3 +19,7 @@ vetcat:
     vigencia: ${VETCAT_TOKEN_VIGENCIA:PT15M}
     clave: ${VETCAT_TOKEN_CLAVE}
     kid: ${VETCAT_TOKEN_KID:dev-1}
+  # Token de identidad: lo emite Keycloak y solo abre sesión y plataforma.
+  identidad:
+    emisor: ${VETCAT_KEYCLOAK_EMISOR:http://localhost:8080/realms/vetcat}
+    jwk-set-uri: ${VETCAT_KEYCLOAK_JWKS:http://localhost:8080/realms/vetcat/protocol/openid-connect/certs}
