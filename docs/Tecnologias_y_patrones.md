@@ -78,7 +78,7 @@ Decididas en el [ADR-0002](adr/0002-versiones-del-stack.md) y registradas tambi�
 | Estado | Riverpod | Bloc |
 | Rutas | go_router | Navigator 2.0 a mano |
 | HTTP | dio | `http` |
-| Modelos y serialización | freezed + json_serializable | Escritura manual |
+| Modelos y serialización | freezed + json_serializable, con `build_runner` como dependencia de desarrollo | Escritura manual |
 | Autenticación OIDC (móvil) | flutter_appauth | `openid_client`, que no abre el navegador del sistema como exige el flujo |
 | Autenticación OIDC (consola web) | openid_client | Adaptador JS de Keycloak: script externo y globales |
 | Almacenamiento de tokens (móvil) | flutter_secure_storage — Keychain y Keystore | `shared_preferences`, no recomendado |
