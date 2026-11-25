@@ -27,6 +27,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Esquema del redirect de Keycloak (vetcat://callback) para flutter_appauth.
+        manifestPlaceholders["appAuthRedirectScheme"] = "vetcat"
     }
 
     buildTypes {
