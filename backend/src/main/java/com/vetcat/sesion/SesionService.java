@@ -58,6 +58,9 @@ public class SesionService {
   /**
    * Valida la pertenencia en la clínica y emite el token de tenant.
    *
+   * <p>Los dos rechazos llevan mensajes distintos a propósito: «La clínica no está disponible» solo
+   * lo ve alguien que ya es miembro, así que no revela nada a quien no lo es.
+   *
    * @throws SinAccesoALaClinicaException si no hay membresía activa o la clínica no está activa
    */
   @Transactional("catalogoTransactionManager")
