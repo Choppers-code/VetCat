@@ -25,7 +25,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
 | `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:8081/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
 | Correo (recuperación de contraseña e invitaciones) | Mailpit en el compose (UI en `:8025`) | Servidor SMTP real, configurado en Keycloak |
-| Migraciones | `docker compose run --rm migraciones`, antes de arrancar la API | El mismo contenedor, como job previo al despliegue |
+| Migraciones | `docker compose run --rm migraciones` para el catálogo y `scripts/sembrar-demo.ps1` para los esquemas de clínica, antes de arrancar la API | Los mismos contenedores, como job previo al despliegue |
 | Logs | Consola | Recolectados y con retención |
 | Secretos | `.env` local, nunca en el repo | Gestor de secretos del proveedor |
 | App Android | APK de debug, URL `10.0.2.2` en emulador o IP de la LAN | APK firmado, URL pública |
@@ -86,6 +86,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 - El esquema de catálogo se migra una vez; los esquemas de clínica se migran en bucle, con una tabla de estado por tenant para saber cuáles van y reintentar los que fallen.
 - Política de **roll-forward**: si una migración falla a mitad, se corrige y se vuelve a aplicar. El rollback de la imagen anterior solo es seguro si la migración fue expand-only.
 - Prohibido cambiar el tipo del enum de estado con `ALTER TYPE` por esquema; se usa `varchar` con `CHECK`.
+- **En local**, el servicio `migraciones-tenant` migra un esquema de clínica por ejecución y `scripts/sembrar-demo.ps1` lo corre para todas las clínicas activas del catálogo, deja su estado en `catalogo.migracion_tenant` y siembra los datos de la demo (dos clínicas y un usuario por papel). Se puede repetir: Flyway no aplica dos veces la misma versión.
 
 ## 6. App Android
 
