@@ -315,8 +315,8 @@ paths:
     get:
       summary: Consultar los consultorios de la clínica.
       description: >-
-        Rol: clinica_admin. La matriz de roles vigente no autoriza la lectura
-        para recepcionista ni veterinario.
+        Roles: clinica_admin, veterinario y recepcionista. La lectura no permite
+        modificar: crear, editar o dar de baja sigue siendo de clinica_admin.
       operationId: listarConsultorios
       responses:
         '200':
@@ -374,10 +374,10 @@ paths:
     get:
       summary: Consultar horarios de consultorio (AGE-013).
       description: >-
-        Rol: clinica_admin. La matriz de roles vigente no autoriza la lectura
-        para recepcionista ni veterinario. Las horas se interpretan en la zona
-        horaria de la clínica; una excepción por fecha sustituye el horario
-        semanal de ese consultorio para ese día.
+        Roles: clinica_admin, veterinario y recepcionista. La lectura no permite
+        modificar; gestionar los horarios sigue siendo de clinica_admin. Las
+        horas se interpretan en la zona horaria de la clínica; una excepción por
+        fecha sustituye el horario semanal de ese consultorio para ese día.
       operationId: consultarHorarios
       parameters:
         - name: consultorioId
@@ -446,9 +446,10 @@ paths:
     get:
       summary: Consultar bloqueos de agenda.
       description: >-
-        Roles: clinica_admin y veterinario (solo los propios). Si el veterinario
-        omite veterinarioId, se filtra automáticamente a su agenda; si lo envía,
-        debe coincidir con el veterinario autenticado o se responde 403.
+        Roles: clinica_admin, recepcionista y veterinario. La recepción ve los
+        bloqueos de toda la clínica; el veterinario solo los suyos: si omite
+        veterinarioId se filtra a su agenda, y si lo envía debe coincidir con su
+        identidad o se responde 403.
       operationId: consultarBloqueos
       parameters:
         - name: desde
@@ -473,8 +474,8 @@ paths:
           in: query
           required: false
           description: >-
-            Filtro disponible para clinica_admin. Para veterinario debe
-            coincidir con su identidad; nunca permite consultar a otro.
+            Filtro de clinica_admin y recepción. Para veterinario debe coincidir
+            con su identidad; nunca permite consultar a otro.
           schema:
             type: integer
             format: int64
