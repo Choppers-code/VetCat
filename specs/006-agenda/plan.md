@@ -60,7 +60,7 @@ Estados: `PENDIENTE`, `CONFIRMADA`, `ATENDIDA`, `NO_ASISTIO`, `CANCELADA`, con `
 | `POST /api/v1/citas/{id}/reprogramar` | recepción, admin | 201 con la cita nueva |
 | `POST /api/v1/citas/solicitudes` | cliente | 201; límite de 3 pendientes |
 | `POST /api/v1/citas/{id}/solicitud-cancelacion` | cliente | 200 si hay 5 horas |
-| `GET/POST/PUT /api/v1/consultorios` y `/horarios` | admin, recepción lectura | catálogo |
+| `GET/POST/PUT /api/v1/consultorios` y `/horarios` | admin; lectura para recepción y veterinario | catálogo |
 | `GET/POST /api/v1/bloqueos` | veterinario (los suyos), admin | bloqueos |
 
 ## Decisiones de diseño
@@ -68,7 +68,7 @@ Estados: `PENDIENTE`, `CONFIRMADA`, `ATENDIDA`, `NO_ASISTIO`, `CANCELADA`, con `
 - **El empalme no se comprueba con `SELECT`**: se captura el `23P01` y se responde 409. Un `SELECT` previo deja una ventana de carrera (decisión de #65).
 - **Zona horaria de la clínica** en horarios, bloqueos y agenda; el cliente no la envía.
 - **Reprogramar** crea una cita nueva: no se edita la anterior.
-- **El veterinario solo ve las suyas** (`AGE-014`), filtrado en la consulta, no en la app.
+- **El veterinario ve la agenda de la clínica en lectura**, pero solo crea, reprograma, cancela y bloquea sobre la suya (`Matriz_roles.md`); el filtro se aplica en la consulta, no en la app.
 
 ## Plan de PR
 
