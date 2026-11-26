@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.vetcat.catalogo.entity.UsuarioClinica;
 import com.vetcat.catalogo.repository.ClinicaRepository;
 import com.vetcat.catalogo.repository.UsuarioClinicaRepository;
+import com.vetcat.citas.repository.ConsultorioRepository;
+import com.vetcat.citas.repository.HorarioConsultorioRepository;
 import com.vetcat.tenancy.TenantAusenteException;
 import com.vetcat.tenancy.TenantContext;
 import jakarta.persistence.EntityManager;
@@ -81,6 +83,8 @@ class UnidadesDePersistenciaTest {
 
   @Autowired ClinicaRepository clinicas;
   @Autowired UsuarioClinicaRepository membresias;
+  @Autowired ConsultorioRepository consultorios;
+  @Autowired HorarioConsultorioRepository horarios;
   @Autowired DataSource dataSource;
 
   @Autowired
@@ -97,6 +101,13 @@ class UnidadesDePersistenciaTest {
 
   @PersistenceContext(unitName = "tenant")
   EntityManager tenantEm;
+
+  @Test
+  void repositorios_tenant_se_inyectan_sin_tenant_activo() {
+    assertThat(TenantContext.actual()).isEmpty();
+    assertThat(consultorios).isNotNull();
+    assertThat(horarios).isNotNull();
+  }
 
   private List<String> mascotasDeLaClinicaActiva() {
     return new TransactionTemplate(tenantTx)
