@@ -4,6 +4,7 @@ import com.vetcat.catalogo.entity.UsuarioClinica;
 import com.vetcat.catalogo.repository.ClinicaRepository;
 import com.vetcat.catalogo.repository.UsuarioClinicaRepository;
 import com.vetcat.configuracion.dto.MiembroResponse;
+import com.vetcat.sesion.SinAccesoALaClinicaException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -57,17 +58,31 @@ public class PersonalClinicaService {
         .toList();
   }
 
-  /** Agrega a una persona con sus roles; si ya era del personal, deja exactamente esos roles. */
-  public MiembroResponse agregar(long clinicaId, UUID keycloakId, Set<String> roles) {
+  /**
+   * Agrega a una persona que todavía no es del personal (CON-002).
+   *
+   * @param actor quien hace el cambio, tomado del token y nunca de la petición
+   */
+  public MiembroResponse agregar(long clinicaId, UUID actor, UUID keycloakId, Set<String> roles) {
     validar(roles);
     bloquear(clinicaId);
+    impedirAutoasignacion(clinicaId, actor, keycloakId, roles);
+    if (!filasDelMiembro(clinicaId, keycloakId).isEmpty()) {
+      throw new MiembroExistenteException();
+    }
     return aplicar(clinicaId, keycloakId, roles, false);
   }
 
-  /** Reemplaza los roles de personal de un miembro existente (CON-003). */
-  public MiembroResponse cambiarRoles(long clinicaId, UUID keycloakId, Set<String> roles) {
+  /**
+   * Reemplaza los roles de personal de un miembro existente (CON-003).
+   *
+   * @param actor quien hace el cambio, tomado del token y nunca de la petición
+   */
+  public MiembroResponse cambiarRoles(
+      long clinicaId, UUID actor, UUID keycloakId, Set<String> roles) {
     validar(roles);
     bloquear(clinicaId);
+    impedirAutoasignacion(clinicaId, actor, keycloakId, roles);
     return aplicar(clinicaId, keycloakId, roles, true);
   }
 
@@ -137,12 +152,31 @@ public class PersonalClinicaService {
     }
   }
 
+  /** Sobre sí mismo solo se pueden quitar roles: los que queden deben estar ya activos. */
+  private void impedirAutoasignacion(
+      long clinicaId, UUID actor, UUID keycloakId, Set<String> roles) {
+    if (!keycloakId.equals(actor)) {
+      return;
+    }
+    List<String> activos =
+        filasDelMiembro(clinicaId, actor).stream()
+            .filter(f -> ACTIVO.equals(f.getEstado()))
+            .map(UsuarioClinica::getRol)
+            .toList();
+    if (!activos.containsAll(roles)) {
+      throw new AutoasignacionDeRolesException();
+    }
+  }
+
   /**
    * Serializa los cambios de personal de una clínica para que el conteo de administradores sea
    * fiable.
    */
   private void bloquear(long clinicaId) {
-    clinicas.bloquearPorId(clinicaId).orElseThrow(MiembroNoEncontradoException::new);
+    // La clínica sale del token: si no existe es un token viejo, como en la sesión.
+    clinicas
+        .bloquearPorId(clinicaId)
+        .orElseThrow(() -> new SinAccesoALaClinicaException("No tienes acceso a esta clínica"));
   }
 
   private long administradoresActivos(long clinicaId) {

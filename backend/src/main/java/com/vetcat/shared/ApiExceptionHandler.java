@@ -1,5 +1,7 @@
 package com.vetcat.shared;
 
+import com.vetcat.configuracion.service.AutoasignacionDeRolesException;
+import com.vetcat.configuracion.service.MiembroExistenteException;
 import com.vetcat.mascotas.service.MascotaNoEncontradaException;
 import com.vetcat.propietarios.service.DireccionNoDisponibleException;
 import com.vetcat.propietarios.service.PropietarioNoEncontradoException;
@@ -57,6 +59,18 @@ public class ApiExceptionHandler {
   @ExceptionHandler(DireccionNoDisponibleException.class)
   @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   public Sobre<Void> direccionNoDisponible(DireccionNoDisponibleException excepcion) {
+    return Sobre.error(excepcion.getMessage());
+  }
+
+  @ExceptionHandler(AutoasignacionDeRolesException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public Sobre<Void> autoasignacion(AutoasignacionDeRolesException excepcion) {
+    return Sobre.error(excepcion.getMessage());
+  }
+
+  @ExceptionHandler(MiembroExistenteException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  public Sobre<Void> miembroExistente(MiembroExistenteException excepcion) {
     return Sobre.error(excepcion.getMessage());
   }
 
