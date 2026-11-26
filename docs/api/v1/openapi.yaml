@@ -239,9 +239,10 @@ paths:
     get:
       summary: Consultar la agenda por rango (AGE-012).
       description: >-
-        Roles: clinica_admin, recepcionista, veterinario. Las fechas se
-        interpretan en la zona horaria de la clínica; el veterinario solo ve
-        las citas de su propia agenda.
+        Roles: clinica_admin, recepcionista, veterinario. Los tres pueden
+        consultar y filtrar la agenda de la clínica; para veterinario la lectura
+        es de solo consulta. Los filtros no amplían el acceso fuera de la clínica
+        activa. Las fechas se interpretan en su zona horaria.
       operationId: consultarAgenda
       parameters:
         - name: desde
@@ -251,6 +252,20 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: veterinarioId
+          in: query
+          required: false
+          description: Filtro de agenda por veterinario.
+          schema:
+            type: integer
+            format: int64
+        - name: consultorioId
+          in: query
+          required: false
+          description: Filtro de agenda por consultorio.
+          schema:
+            type: integer
+            format: int64
         - name: hasta
           in: query
           required: true
@@ -299,11 +314,13 @@ paths:
   /consultorios:
     get:
       summary: Consultar los consultorios de la clínica.
-      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      description: >-
+        Rol: clinica_admin. La matriz de roles vigente no autoriza la lectura
+        para recepcionista ni veterinario.
       operationId: listarConsultorios
       responses:
         '200':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/Consultorios'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -320,7 +337,7 @@ paths:
               $ref: '#/components/schemas/ConsultorioRequest'
       responses:
         '201':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/ConsultorioFicha'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -343,7 +360,7 @@ paths:
               $ref: '#/components/schemas/ConsultorioRequest'
       responses:
         '200':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/ConsultorioFicha'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -357,9 +374,10 @@ paths:
     get:
       summary: Consultar horarios de consultorio (AGE-013).
       description: >-
-        Roles: clinica_admin, recepcionista, veterinario. Las horas se
-        interpretan en la zona horaria de la clínica; una excepción por fecha
-        sustituye el horario semanal de ese consultorio para ese día.
+        Rol: clinica_admin. La matriz de roles vigente no autoriza la lectura
+        para recepcionista ni veterinario. Las horas se interpretan en la zona
+        horaria de la clínica; una excepción por fecha sustituye el horario
+        semanal de ese consultorio para ese día.
       operationId: consultarHorarios
       parameters:
         - name: consultorioId
@@ -370,7 +388,7 @@ paths:
             format: int64
       responses:
         '200':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/Horarios'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -387,7 +405,7 @@ paths:
               $ref: '#/components/schemas/HorarioRequest'
       responses:
         '201':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/HorarioFicha'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -412,7 +430,7 @@ paths:
               $ref: '#/components/schemas/HorarioRequest'
       responses:
         '200':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/HorarioFicha'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -428,8 +446,9 @@ paths:
     get:
       summary: Consultar bloqueos de agenda.
       description: >-
-        Roles: clinica_admin, recepcionista, veterinario. El veterinario solo
-        puede consultar los bloqueos de su propia agenda.
+        Roles: clinica_admin y veterinario (solo los propios). Si el veterinario
+        omite veterinarioId, se filtra automáticamente a su agenda; si lo envía,
+        debe coincidir con el veterinario autenticado o se responde 403.
       operationId: consultarBloqueos
       parameters:
         - name: desde
@@ -453,12 +472,15 @@ paths:
         - name: veterinarioId
           in: query
           required: false
+          description: >-
+            Filtro disponible para clinica_admin. Para veterinario debe
+            coincidir con su identidad; nunca permite consultar a otro.
           schema:
             type: integer
             format: int64
       responses:
         '200':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/Bloqueos'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -468,9 +490,11 @@ paths:
     post:
       summary: Registrar un bloqueo por veterinario o consultorio (AGE-002).
       description: >-
-        Roles: clinica_admin, recepcionista, veterinario. Un veterinario solo
-        puede bloquear su propia agenda. Los intervalos usan la zona horaria
-        de la clínica; no se modifican las citas existentes.
+        Roles: clinica_admin y veterinario. Un veterinario solo puede bloquear
+        su propia agenda y debe indicar su veterinarioId; solo clinica_admin
+        puede bloquear por consultorio o la agenda de otro veterinario. Los
+        intervalos usan la zona horaria de la clínica; no se modifican las citas
+        existentes.
       operationId: registrarBloqueo
       requestBody:
         required: true
@@ -480,7 +504,7 @@ paths:
               $ref: '#/components/schemas/BloqueoRequest'
       responses:
         '201':
-          $ref: '#/components/responses/JsonExito'
+          $ref: '#/components/responses/BloqueoFicha'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
@@ -705,7 +729,7 @@ components:
 
     CitaRequest:
       type: object
-      required: [mascotaId, veterinarioId, consultorioId, inicio]
+      required: [mascotaId, veterinarioId, consultorioId, inicio, duracionMinutos]
       properties:
         mascotaId: {type: integer, format: int64}
         veterinarioId: {type: integer, format: int64}
@@ -717,17 +741,26 @@ components:
         duracionMinutos:
           type: integer
           minimum: 1
-          description: Duración ajustable; si se omite se usa el valor por defecto de la clínica.
+          maximum: 1440
+          description: >-
+            Duración obligatoria en minutos (1 a 1440). El fin se calcula como
+            inicio más esta duración; no depende de una configuración en
+            catalogo.clinica.
         motivo: {type: string, maxLength: 500}
 
     CitaResponse:
       type: object
-      required: [id, mascotaId, veterinarioId, consultorioId, inicio, fin, estado]
+      required: [id, mascotaId, veterinarioId, tipo, consultorioId, inicio, fin, estado]
       properties:
         id: {type: integer, format: int64}
         mascotaId: {type: integer, format: int64}
         veterinarioId: {type: integer, format: int64}
-        consultorioId: {type: integer, format: int64}
+        tipo:
+          type: string
+          enum: [CONSULTORIO, DOMICILIO]
+        consultorioId:
+          type: [integer, 'null']
+          format: int64
         inicio: {type: string, format: date-time}
         fin: {type: string, format: date-time}
         estado:
@@ -740,6 +773,10 @@ components:
       required: [nombre]
       properties:
         nombre: {type: string, minLength: 1, maxLength: 100}
+        activo:
+          type: boolean
+          default: true
+          description: false da de baja lógicamente el consultorio.
 
     ConsultorioResponse:
       type: object
@@ -751,9 +788,18 @@ components:
 
     HorarioRequest:
       type: object
-      required: [consultorioId, horaInicio, horaFin]
+      required: [consultorioId, esCierre]
       properties:
         consultorioId: {type: integer, format: int64}
+        esCierre:
+          type: boolean
+          description: >-
+            Si es true, el horario cierra el consultorio en el día indicado y
+            no requiere horaInicio ni horaFin.
+        activo:
+          type: boolean
+          default: true
+          description: false desactiva el horario o la excepción.
         diaSemana:
           type: integer
           minimum: 1
@@ -763,8 +809,10 @@ components:
           type: string
           format: date
           description: Excepción para esta fecha, que sustituye el horario semanal.
-        horaInicio: {type: string, format: time}
-        horaFin: {type: string, format: time}
+        horaInicio:
+          type: [string, 'null']
+        horaFin:
+          type: [string, 'null']
       oneOf:
         - required: [diaSemana]
           not:
@@ -772,17 +820,55 @@ components:
         - required: [fecha]
           not:
             required: [diaSemana]
+      allOf:
+        - if:
+            properties:
+              esCierre:
+                const: false
+          then:
+            required: [horaInicio, horaFin]
+            properties:
+              horaInicio: {type: string, format: time}
+              horaFin: {type: string, format: time}
+        - if:
+            properties:
+              esCierre:
+                const: true
+          then:
+            properties:
+              horaInicio: {type: 'null'}
+              horaFin: {type: 'null'}
 
     HorarioResponse:
       type: object
-      required: [id, consultorioId, horaInicio, horaFin]
+      required: [id, consultorioId, esCierre, activo]
       properties:
         id: {type: integer, format: int64}
         consultorioId: {type: integer, format: int64}
+        esCierre: {type: boolean}
+        activo: {type: boolean}
         diaSemana: {type: integer, minimum: 1, maximum: 7}
         fecha: {type: string, format: date}
-        horaInicio: {type: string, format: time}
-        horaFin: {type: string, format: time}
+        horaInicio: {type: [string, 'null']}
+        horaFin: {type: [string, 'null']}
+      allOf:
+        - if:
+            properties:
+              esCierre:
+                const: false
+          then:
+            required: [horaInicio, horaFin]
+            properties:
+              horaInicio: {type: string, format: time}
+              horaFin: {type: string, format: time}
+        - if:
+            properties:
+              esCierre:
+                const: true
+          then:
+            properties:
+              horaInicio: {type: 'null'}
+              horaFin: {type: 'null'}
 
     BloqueoRequest:
       type: object
@@ -884,6 +970,78 @@ components:
                 properties:
                   data:
                     $ref: '#/components/schemas/CitaResponse'
+    Consultorios:
+      description: Consultorios activos de la clínica.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsultorioResponse'
+    ConsultorioFicha:
+      description: Consultorio registrado, actualizado o dado de baja lógicamente.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ConsultorioResponse'
+    Horarios:
+      description: Horarios y cierres activos del consultorio.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HorarioResponse'
+    HorarioFicha:
+      description: Horario o cierre registrado o actualizado.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/HorarioResponse'
+    Bloqueos:
+      description: Bloqueos que intersectan el rango solicitado.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BloqueoResponse'
+    BloqueoFicha:
+      description: Bloqueo registrado.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Respuesta'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BloqueoResponse'
     NoEncontrado:
       description: No existe en la clínica del token (también si es de otra clínica).
       content:
