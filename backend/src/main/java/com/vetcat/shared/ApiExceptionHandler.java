@@ -1,8 +1,15 @@
 package com.vetcat.shared;
 
+import com.vetcat.propietarios.service.DireccionNoDisponibleException;
+import com.vetcat.propietarios.service.PropietarioNoEncontradoException;
+import com.vetcat.propietarios.service.TelefonoDuplicadoException;
 import com.vetcat.security.TokenTenantInvalidoException;
 import com.vetcat.sesion.SinAccesoALaClinicaException;
+import java.util.Comparator;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,5 +32,43 @@ public class ApiExceptionHandler {
   @ResponseStatus(HttpStatus.UNAUTHORIZED)
   public Sobre<Void> tokenInvalido(TokenTenantInvalidoException excepcion) {
     return Sobre.error("La sesión no es válida");
+  }
+
+  @ExceptionHandler(PropietarioNoEncontradoException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public Sobre<Void> noEncontrado(PropietarioNoEncontradoException excepcion) {
+    return Sobre.error(excepcion.getMessage());
+  }
+
+  @ExceptionHandler(TelefonoDuplicadoException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  public Sobre<Void> duplicado(TelefonoDuplicadoException excepcion) {
+    return Sobre.error(excepcion.getMessage());
+  }
+
+  @ExceptionHandler(DireccionNoDisponibleException.class)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+  public Sobre<Void> direccionNoDisponible(DireccionNoDisponibleException excepcion) {
+    return Sobre.error(excepcion.getMessage());
+  }
+
+  /** Entrada que no supera {@code @Valid}: se informa el primer campo, en orden alfabético. */
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+  public Sobre<Void> entradaInvalida(MethodArgumentNotValidException excepcion) {
+    String mensaje =
+        excepcion.getBindingResult().getFieldErrors().stream()
+            .sorted(Comparator.comparing(FieldError::getField))
+            .map(FieldError::getDefaultMessage)
+            .findFirst()
+            .orElse("La entrada no es válida");
+    return Sobre.error(mensaje);
+  }
+
+  /** Cuerpo que no se puede leer: el motivo técnico no sale al cliente. */
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+  public Sobre<Void> cuerpoIlegible(HttpMessageNotReadableException excepcion) {
+    return Sobre.error("La entrada no es válida");
   }
 }

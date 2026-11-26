@@ -2,11 +2,14 @@ package com.vetcat.tenancy;
 
 import jakarta.persistence.EntityManagerFactory;
 import java.util.Map;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -21,12 +24,27 @@ import org.springframework.transaction.PlatformTransactionManager;
  * §2).
  */
 @Configuration
+@EnableJpaRepositories(
+    basePackages = {"com.vetcat.propietarios.repository", "com.vetcat.mascotas.repository"},
+    entityManagerFactoryRef = "tenantEntityManagerFactory",
+    transactionManagerRef = "tenantTransactionManager",
+    // Preparar una consulta abre una sesión, y al arrancar no hay clínica: cada repositorio se
+    // inicializa en su primer uso en vez de debilitar el fallo cerrado del resolutor.
+    bootstrapMode = BootstrapMode.LAZY)
 public class TenantPersistenceConfig {
 
   /** Paquetes con entidades de clínica; cada módulo añade el suyo al nacer. */
   private static final String PAQUETES_POR_DEFECTO =
       "com.vetcat.propietarios,com.vetcat.mascotas,com.vetcat.expediente,com.vetcat.vacunas,"
           + "com.vetcat.citas,com.vetcat.facturacion,com.vetcat.portal";
+
+  /**
+   * Entidades de los módulos con repositorios habilitados arriba. Se registran siempre: sin ellas,
+   * sus repositorios no arrancan aunque se cambie {@code vetcat.tenant.paquetes}.
+   */
+  private static final String[] PAQUETES_CON_REPOSITORIOS = {
+    "com.vetcat.propietarios", "com.vetcat.mascotas"
+  };
 
   @Bean
   public SchemaMultiTenantConnectionProvider schemaMultiTenantConnectionProvider(
@@ -47,7 +65,10 @@ public class TenantPersistenceConfig {
     var fabrica = new LocalContainerEntityManagerFactoryBean();
     fabrica.setPersistenceUnitName("tenant");
     // Sin DataSource propio: las conexiones las entrega el proveedor, ya con el esquema fijado.
-    fabrica.setPackagesToScan(paquetes);
+    fabrica.setPackagesToScan(
+        Stream.concat(Stream.of(PAQUETES_CON_REPOSITORIOS), Stream.of(paquetes))
+            .distinct()
+            .toArray(String[]::new));
     fabrica.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
     fabrica.setJpaPropertyMap(
         Map.of(

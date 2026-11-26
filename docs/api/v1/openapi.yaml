@@ -73,7 +73,10 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
     put:
       summary: Editar los datos de un propietario (PRO-002).
-      description: 'Roles: clinica_admin, recepcionista, veterinario.'
+      description: >-
+        Roles: clinica_admin, recepcionista, veterinario. Devuelve 409 si el
+        teléfono nuevo ya es de otro propietario y la petición no trae
+        confirmarDuplicado.
       operationId: editarPropietario
       requestBody:
         required: true
@@ -90,6 +93,8 @@ paths:
           $ref: '#/components/responses/Prohibido'
         '404':
           $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
         '422':
           $ref: '#/components/responses/EntradaInvalida'
 
@@ -640,7 +645,7 @@ components:
         confirmarDuplicado:
           type: boolean
           default: false
-          description: Crea el propietario aunque el teléfono ya exista.
+          description: Guarda la ficha aunque otro propietario ya tenga ese teléfono.
 
     PropietarioResponse:
       type: object
