@@ -35,4 +35,25 @@ public final class TenantContext {
   public static Optional<Long> actual() {
     return Optional.ofNullable(ACTUAL.get());
   }
+
+  /**
+   * Fija el tenant del hilo y devuelve el anterior, para poder restaurarlo.
+   *
+   * <p>Lo usa el filtro web, que necesita fijarlo y restaurarlo alrededor de una cadena que lanza
+   * excepciones comprobadas; {@link #ejecutar(long, Supplier)} no sirve ahí.
+   */
+  static Long fijar(long tenantId) {
+    Long anterior = ACTUAL.get();
+    ACTUAL.set(tenantId);
+    return anterior;
+  }
+
+  /** Restablece el tenant anterior; {@code null} deja el hilo sin tenant. */
+  static void restaurar(Long anterior) {
+    if (anterior == null) {
+      ACTUAL.remove();
+    } else {
+      ACTUAL.set(anterior);
+    }
+  }
 }
