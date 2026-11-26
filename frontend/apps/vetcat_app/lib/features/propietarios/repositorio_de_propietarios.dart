@@ -21,6 +21,16 @@ class RepositorioDePropietarios {
   Future<PropietarioResponse> ficha(int id) =>
       _api.obtener('/propietarios/$id', convertir: _propietario);
 
+  Future<PropietarioResponse> registrar(PropietarioRequest datos) => _api
+      .enviar('/propietarios', cuerpo: datos.toJson(), convertir: _propietario);
+
+  Future<PropietarioResponse> editar(int id, PropietarioRequest datos) =>
+      _api.actualizar(
+        '/propietarios/$id',
+        cuerpo: datos.toJson(),
+        convertir: _propietario,
+      );
+
   static PropietarioResponse _propietario(Object? datos) =>
       PropietarioResponse.fromJson(datos! as Map<String, Object?>);
 }
@@ -28,3 +38,8 @@ class RepositorioDePropietarios {
 final repositorioDePropietariosProvider = Provider<RepositorioDePropietarios>(
   (ref) => RepositorioDePropietarios(ref.watch(apiProvider)),
 );
+
+/// Si el plan de la clínica incluye `visitas_domicilio` (PLA-004). **Todavía no
+/// hay de dónde leerlo**: el token no trae las funciones del plan y su
+/// verificación está aparcada (#156). Hasta entonces la dirección no se ofrece.
+final visitasDomicilioProvider = Provider<bool>((ref) => false);
