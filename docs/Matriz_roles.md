@@ -14,7 +14,8 @@ Qué puede hacer cada rol, acción por acción. `Decisiones_tecnicas.md` §4 la 
 | Baja o suspensión de una clínica | ✓ | — | — | — | — |
 | Configuración de la clínica y zona horaria | — | ✓ | — | — | — |
 | Identidad de la clínica y logo | — | ✓ | — | — | — |
-| Consultorios y horarios de atención | — | ✓ | — | — | — |
+| Gestionar consultorios y horarios de atención | — | ✓ | — | — | — |
+| Consultar consultorios y horarios | — | ✓ | ✓ | ✓ | — |
 | Crear, editar y desactivar personal | — | ✓ | — | — | — |
 | Invitar a un cliente y generar su código de vinculación | — | ✓ | — | ✓ | — |
 | Ver el plan y el uso propios | — | ✓ | — | — | — |
@@ -23,6 +24,8 @@ Qué puede hacer cada rol, acción por acción. `Decisiones_tecnicas.md` §4 la 
 | Monitoreo de la plataforma | ✓ | — | — | — | — |
 
 Un usuario puede tener **varios roles en una misma clínica**. `AC` no puede crear usuarios `super_admin` ni `cliente`, ni quitarse el último rol `clinica_admin`, ni darse permisos que no tiene: la asignación de roles la valida el backend contra esta matriz, no contra la petición.
+
+**Consultar no es gestionar.** `V` y `R` leen consultorios y horarios porque los necesitan para agendar (AGE-001); crear, editar o dar de baja sigue siendo solo de `AC`.
 
 ## Propietarios y mascotas
 
@@ -42,6 +45,7 @@ Un usuario puede tener **varios roles en una misma clínica**. `AC` no puede cre
 |---|---|---|---|---|---|
 | Ver la agenda de toda la clínica | — | ✓ | ◐ | ✓ | — |
 | Ver agenda propia | — | ✓ | ✓ | ✓ | — |
+| Consultar bloqueos | — | ✓ | ◐ | ✓ | — |
 | Crear cita | — | ✓ | ◐ | ✓ | ◐ |
 | Confirmar cita | — | — | ◐ | — | — |
 | Reprogramar | — | ✓ | ◐ | ✓ | — |
@@ -52,7 +56,7 @@ Un usuario puede tener **varios roles en una misma clínica**. `AC` no puede cre
 | Bloquear agenda | — | ✓ | ◐ | — | — |
 | Ver sus citas y descargar el comprobante de cita | — | — | — | — | ◐ |
 
-◐ `V` ve la agenda completa en lectura, pero solo crea, reprograma, cancela y bloquea sobre su propia agenda, y solo confirma, atiende, marca no asistió o resuelve solicitudes de las citas donde es el veterinario asignado. `C` **solicita** una cita (queda `PENDIENTE` hasta que el veterinario la confirma) solo para mascotas propias y con un máximo de 3 pendientes; solicita cancelar solo con la anticipación configurada. Todo lo de `C` requiere que el plan incluya `portal_cliente`.
+◐ `V` ve la agenda completa en lectura, pero solo crea, reprograma, cancela y bloquea sobre su propia agenda, y solo confirma, atiende, marca no asistió o resuelve solicitudes de las citas donde es el veterinario asignado. En **Consultar bloqueos**, `V` solo ve los suyos y `R` los de toda la clínica activa; ninguno puede modificarlos. `C` **solicita** una cita (queda `PENDIENTE` hasta que el veterinario la confirma) solo para mascotas propias y con un máximo de 3 pendientes; solicita cancelar solo con la anticipación configurada. Todo lo de `C` requiere que el plan incluya `portal_cliente`.
 
 ## Expediente clínico
 
