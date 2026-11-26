@@ -31,7 +31,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | App Android | APK de debug, URL `10.0.2.2` en emulador o IP de la LAN | APK firmado, URL pública |
 | Respaldos | `pg_dump` manual a carpeta local | Base backup + WAL + dump por esquema |
 
-**Variables de entorno.** El contrato completo está en `infrastructure/docker/.env.example`, que es la fuente de la tabla: si una variable no está en los dos sitios, uno de los dos está mal.
+**Variables de entorno.** El contrato completo está en `infrastructure/docker/.env.example`, que es la fuente de la tabla: si una variable no está en los dos sitios, uno de los dos está mal. Incluye las variables de la API, que hoy se ejecuta en el host: el compose todavía no tiene servicio de API.
 
 | Variable | Desarrollo | Para qué |
 |---|---|---|
@@ -52,6 +52,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `KEYCLOAK_SMTP_FROM` | `no-reply@vetcat.dev` | Remitente de recuperaciones e invitaciones |
 | `VETCAT_APP_REDIRECT_URI` | `vetcat://callback` | `redirect_uri` del cliente `vetcat-app` |
 | `VETCAT_ADMIN_ORIGIN` | `http://localhost:8081` | Origen del cliente `vetcat-admin`: Web Origin y base de su `redirect_uri` |
+| `VETCAT_TOKEN_CLAVE` | valor local de 32+ bytes | Clave HMAC del token de tenant; la API no arranca sin ella |
 | `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
