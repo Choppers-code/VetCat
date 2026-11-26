@@ -381,8 +381,9 @@ paths:
       description: >-
         Roles: clinica_admin, veterinario y recepcionista. La lectura no permite
         modificar; gestionar los horarios sigue siendo de clinica_admin. Las
-        horas se interpretan en la zona horaria de la clínica; una excepción por
-        fecha sustituye el horario semanal de ese consultorio para ese día.
+        horas y la fecha se interpretan en la zona horaria de la clínica. Si se
+        indica fecha, una excepción activa sustituye los horarios semanales de
+        ese consultorio para ese día; sin fecha se devuelve la configuración.
       operationId: consultarHorarios
       parameters:
         - name: consultorioId
@@ -391,6 +392,13 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: fecha
+          in: query
+          required: false
+          description: Fecha local de la clínica para resolver la excepción sobre el horario semanal.
+          schema:
+            type: string
+            format: date
       responses:
         '200':
           $ref: '#/components/responses/Horarios'

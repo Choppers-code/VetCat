@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 
@@ -25,7 +26,7 @@ public class Consultorio {
   @Column(name = "creado_en", insertable = false, updatable = false)
   private Instant creadoEn;
 
-  @Column(name = "actualizado_en", insertable = false, updatable = false)
+  @Column(name = "actualizado_en", insertable = false)
   private Instant actualizadoEn;
 
   protected Consultorio() {}
@@ -45,6 +46,16 @@ public class Consultorio {
 
   public boolean isActivo() {
     return activo;
+  }
+
+  public void actualizar(String nombre, boolean activo) {
+    this.nombre = nombre;
+    this.activo = activo;
+  }
+
+  @PreUpdate
+  void actualizarMarcaDeTiempo() {
+    actualizadoEn = Instant.now();
   }
 
   public Instant getCreadoEn() {

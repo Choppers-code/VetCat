@@ -2,11 +2,19 @@ package com.vetcat.citas;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import com.vetcat.citas.entity.BloqueoAgenda;
 import com.vetcat.citas.entity.Cita;
 import com.vetcat.citas.entity.Consultorio;
 import com.vetcat.citas.entity.HorarioConsultorio;
+import com.vetcat.security.TokenTenantService;
 import com.vetcat.tenancy.TenantContext;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -18,6 +26,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,8 +34,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,6 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
+@AutoConfigureMockMvc
 @SpringBootTest(properties = {"vetcat.token.clave=clave-de-prueba-con-mas-de-32-bytes-para-hmac"})
 class EsquemaAgendaTest {
 
@@ -41,6 +54,9 @@ class EsquemaAgendaTest {
   static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17.11-alpine");
 
   private static String esquema;
+  private static String otroEsquema;
+  private static long clinicaId;
+  private static long otraClinicaId;
 
   @PersistenceContext(unitName = "tenant")
   EntityManager tenantEm;
@@ -48,6 +64,9 @@ class EsquemaAgendaTest {
   @Autowired
   @Qualifier("tenantTransactionManager")
   PlatformTransactionManager tenantTx;
+
+  @Autowired MockMvc mockMvc;
+  @Autowired TokenTenantService tokens;
 
   @DynamicPropertySource
   static void registraConexion(DynamicPropertyRegistry registro) {
@@ -76,15 +95,34 @@ class EsquemaAgendaTest {
         ResultSet resultado =
             sentencia.executeQuery(
                 "INSERT INTO catalogo.clinica (nombre, zona_horaria) "
-                    + "VALUES ('Agenda', 'UTC') RETURNING esquema")) {
+                    + "VALUES ('Agenda', 'America/Mexico_City') RETURNING id, esquema")) {
       resultado.next();
-      esquema = resultado.getString(1);
+      clinicaId = resultado.getLong(1);
+      esquema = resultado.getString(2);
     }
 
     Flyway.configure()
         .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
         .schemas(esquema, "ext")
         .defaultSchema(esquema)
+        .locations("filesystem:../database/migrations/tenant")
+        .load()
+        .migrate();
+
+    try (Connection conexion = conexion();
+        Statement sentencia = conexion.createStatement();
+        ResultSet resultado =
+            sentencia.executeQuery(
+                "INSERT INTO catalogo.clinica (nombre, zona_horaria) "
+                    + "VALUES ('Otra agenda', 'UTC') RETURNING id, esquema")) {
+      resultado.next();
+      otraClinicaId = resultado.getLong(1);
+      otroEsquema = resultado.getString(2);
+    }
+    Flyway.configure()
+        .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+        .schemas(otroEsquema, "ext")
+        .defaultSchema(otroEsquema)
         .locations("filesystem:../database/migrations/tenant")
         .load()
         .migrate();
@@ -193,6 +231,225 @@ class EsquemaAgendaTest {
     assertThat(texto("SELECT count(*) FROM " + esquema + ".horario_consultorio")).isEqualTo("2");
     assertThat(texto("SELECT count(*) FROM " + esquema + ".bloqueo_agenda")).isEqualTo("1");
     assertThat(texto("SELECT mascota_id FROM " + esquema + ".cita")).isEqualTo("1");
+  }
+
+  @Test
+  void consultorios_horarios_estado_cierres_y_conflictos() throws Exception {
+    String token = tokens.emitir("admin", clinicaId, List.of("clinica_admin"));
+    String respuesta =
+        mockMvc
+            .perform(
+                post("/api/v1/consultorios")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"nombre\":\"Consulta\",\"activo\":true}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.data.activo").value(true))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long consultorioId = ((Number) JsonPath.read(respuesta, "$.data.id")).longValue();
+
+    mockMvc
+        .perform(
+            post("/api/v1/horarios")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"diaSemana\":1,\"esCierre\":false,"
+                        + "\"horaInicio\":\"09:00:00\",\"horaFin\":\"11:00:00\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.activo").value(true));
+
+    mockMvc
+        .perform(
+            get("/api/v1/horarios")
+                .param("consultorioId", Long.toString(consultorioId))
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.length()").value(1));
+
+    mockMvc
+        .perform(
+            post("/api/v1/horarios")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"diaSemana\":1,\"esCierre\":false,"
+                        + "\"horaInicio\":\"10:00:00\",\"horaFin\":\"12:00:00\"}"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.success").value(false));
+
+    mockMvc
+        .perform(
+            post("/api/v1/horarios")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"diaSemana\":1,\"esCierre\":false,"
+                        + "\"horaInicio\":\"12:00:00\",\"horaFin\":\"11:00:00\"}"))
+        .andExpect(status().isUnprocessableEntity());
+
+    long horarioId = Long.parseLong(texto("SELECT id FROM " + esquema + ".horario_consultorio"));
+    String marcaAnterior =
+        texto(
+            "SELECT actualizado_en::text FROM "
+                + esquema
+                + ".horario_consultorio WHERE id = "
+                + horarioId);
+    Thread.sleep(5);
+    mockMvc
+        .perform(
+            put("/api/v1/horarios/" + horarioId)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"diaSemana\":1,\"esCierre\":false,\"activo\":false,"
+                        + "\"horaInicio\":\"09:00:00\",\"horaFin\":\"11:00:00\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.activo").value(false));
+    assertThat(texto("SELECT actualizado_en::text FROM " + esquema + ".horario_consultorio"))
+        .isNotEqualTo(marcaAnterior);
+
+    mockMvc
+        .perform(
+            post("/api/v1/horarios")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"diaSemana\":1,\"esCierre\":false,"
+                        + "\"horaInicio\":\"10:00:00\",\"horaFin\":\"12:00:00\"}"))
+        .andExpect(status().isCreated());
+
+    String cierre =
+        mockMvc
+            .perform(
+                post("/api/v1/horarios")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"consultorioId\":"
+                            + consultorioId
+                            + ",\"fecha\":\"2026-11-30\",\"esCierre\":true}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.data.esCierre").value(true))
+            .andExpect(jsonPath("$.data.horaInicio").value(nullValue()))
+            .andExpect(jsonPath("$.data.horaFin").value(nullValue()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long cierreId = ((Number) JsonPath.read(cierre, "$.data.id")).longValue();
+    mockMvc
+        .perform(
+            get("/api/v1/horarios")
+                .param("consultorioId", Long.toString(consultorioId))
+                .param("fecha", "2026-11-30")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.length()").value(1))
+        .andExpect(jsonPath("$.data[0].esCierre").value(true));
+
+    mockMvc
+        .perform(
+            post("/api/v1/horarios")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"fecha\":\"2026-11-30\",\"esCierre\":false,"
+                        + "\"horaInicio\":\"09:00:00\",\"horaFin\":\"10:00:00\"}"))
+        .andExpect(status().isConflict());
+
+    mockMvc
+        .perform(
+            put("/api/v1/horarios/" + cierreId)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"consultorioId\":"
+                        + consultorioId
+                        + ",\"fecha\":\"2026-11-30\",\"esCierre\":true,\"activo\":false}"))
+        .andExpect(status().isOk());
+    mockMvc
+        .perform(
+            get("/api/v1/horarios")
+                .param("consultorioId", Long.toString(consultorioId))
+                .param("fecha", "2026-11-30")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.length()").value(1))
+        .andExpect(jsonPath("$.data[0].esCierre").value(false))
+        .andExpect(jsonPath("$.data[0].horaInicio").value("10:00:00"));
+
+    String marcaConsultorio =
+        texto(
+            "SELECT actualizado_en::text FROM "
+                + esquema
+                + ".consultorio WHERE id = "
+                + consultorioId);
+    Thread.sleep(5);
+    mockMvc
+        .perform(
+            put("/api/v1/consultorios/" + consultorioId)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Consulta\",\"activo\":false}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.activo").value(false));
+    assertThat(
+            texto(
+                "SELECT actualizado_en::text FROM "
+                    + esquema
+                    + ".consultorio WHERE id = "
+                    + consultorioId))
+        .isNotEqualTo(marcaConsultorio);
+
+    mockMvc
+        .perform(
+            get("/api/v1/consultorios")
+                .header(
+                    "Authorization",
+                    "Bearer " + tokens.emitir("otro", otraClinicaId, List.of("recepcionista"))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").isEmpty());
+  }
+
+  @Test
+  void consultorios_exigen_autenticacion_y_rol_de_clinica() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/consultorios"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false));
+
+    mockMvc
+        .perform(
+            get("/api/v1/consultorios")
+                .header(
+                    "Authorization",
+                    "Bearer " + tokens.emitir("cliente", clinicaId, List.of("cliente"))))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.success").value(false));
+
+    mockMvc
+        .perform(
+            post("/api/v1/consultorios")
+                .header(
+                    "Authorization",
+                    "Bearer " + tokens.emitir("veterinario", clinicaId, List.of("veterinario")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Sin permiso\"}"))
+        .andExpect(status().isForbidden());
   }
 
   private static Connection conexion() throws SQLException {
