@@ -135,11 +135,15 @@ class Entorno {
   final auth = AutenticadorFalso();
   final repositorio = RepositorioFalso();
 
+  /// Sustituciones propias de cada prueba.
+  final List<Override> extra = [];
+
   List<Override> get overrides => [
     almacenProvider.overrideWithValue(almacen),
     almacenDeClinicaProvider.overrideWithValue(ultima),
     autenticadorProvider.overrideWithValue(auth),
     repositorioDeSesionProvider.overrideWithValue(repositorio),
+    ...extra,
   ];
 
   Future<void> abrir(WidgetTester tester) async {

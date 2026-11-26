@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../sesion/pantallas_de_sesion.dart';
+import '../propietarios/pantallas_de_propietarios.dart';
 import 'controlador_de_clinica.dart';
 import 'menu_de_sesion.dart';
 import 'pantallas_de_clinica.dart';
@@ -41,11 +42,17 @@ class AreaDeClinica extends ConsumerWidget {
         title: Text(estado.sesion.nombre),
         actions: [MenuDeSesion(estado: estado)],
       ),
-      body: Center(
-        child: Text(
-          vista == Vista.profesional ? 'Vista profesional' : 'Vista de cliente',
-        ),
-      ),
+      body: vista == Vista.profesional
+          ? const Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text('Vista profesional'),
+                ),
+                Expanded(child: ModuloDePropietarios()),
+              ],
+            )
+          : const Center(child: Text('Vista de cliente')),
     );
   }
 }
