@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vetcat_core/vetcat_core.dart';
 import 'package:vetcat_ui/vetcat_ui.dart';
 
-void main() => runApp(const VetcatApp());
+import 'sesion/pantallas_de_sesion.dart';
+
+void main() => runApp(const ProviderScope(child: VetcatApp()));
 
 class VetcatApp extends StatelessWidget {
   const VetcatApp({super.key});
@@ -12,7 +15,7 @@ class VetcatApp extends StatelessWidget {
     return MaterialApp(
       title: nombreProducto,
       theme: VetcatTema.claro,
-      home: const PantallaMinima(titulo: '$nombreProducto móvil'),
+      home: const RaizDeSesion(),
     );
   }
 }
