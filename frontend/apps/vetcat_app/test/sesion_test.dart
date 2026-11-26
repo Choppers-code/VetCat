@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vetcat_app/features/sesion/controlador_de_clinica.dart';
 import 'package:vetcat_app/sesion/almacen_de_tokens.dart';
 import 'package:vetcat_app/sesion/autenticador.dart';
 import 'package:vetcat_app/sesion/controlador_de_sesion.dart';
 import 'package:vetcat_app/sesion/pantallas_de_sesion.dart';
 import 'package:vetcat_app/sesion/tokens_de_identidad.dart';
+
+import 'apoyo.dart' show AlmacenDeClinicaFalso;
 
 TokensDeIdentidad tokens({
   Duration vida = const Duration(minutes: 5),
@@ -68,6 +71,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          almacenDeClinicaProvider.overrideWithValue(AlmacenDeClinicaFalso()),
           almacenProvider.overrideWithValue(almacen),
           autenticadorProvider.overrideWithValue(auth),
         ],

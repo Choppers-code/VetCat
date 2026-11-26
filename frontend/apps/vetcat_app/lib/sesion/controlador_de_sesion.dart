@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/sesion/controlador_de_clinica.dart';
 import 'almacen_de_tokens.dart';
 import 'autenticador.dart';
 import 'tokens_de_identidad.dart';
@@ -93,12 +94,38 @@ class ControladorDeSesion extends Notifier<EstadoDeSesion> {
   Future<void> cerrar() async {
     final actual = state;
     final idToken = actual is ConSesion ? actual.tokens.idToken : null;
-    state = const SinSesion();
-    await _almacen.borrar();
+    await _olvidar();
     try {
       await _autenticador.cerrar(idToken);
     } on Object {
       // La sesión local ya no existe; la de Keycloak vence sola.
     }
+  }
+
+  /// Renueva el token de identidad. `false` si Keycloak ya no lo acepta; quien
+  /// llama decide si expira la sesión.
+  Future<bool> renovarIdentidad() async {
+    final actual = state;
+    final refresco = actual is ConSesion ? actual.tokens.refresco : null;
+    if (refresco == null) return false;
+    try {
+      final nuevos = await _autenticador.renovar(refresco);
+      if (nuevos == null) return false;
+      await _almacen.guardar(nuevos);
+      state = ConSesion(nuevos);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  /// La sesión caducó y no se puede recuperar: se vuelve al acceso sin abrir
+  /// el navegador.
+  Future<void> expirar() => _olvidar();
+
+  Future<void> _olvidar() async {
+    state = const SinSesion();
+    await _almacen.borrar();
+    await ref.read(almacenDeClinicaProvider).borrar();
   }
 }
