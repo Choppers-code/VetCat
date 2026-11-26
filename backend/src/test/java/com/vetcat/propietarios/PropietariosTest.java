@@ -290,6 +290,99 @@ class PropietariosTest {
   }
 
   @Test
+  void editar_al_telefono_de_otro_propietario_da_409_y_no_cambia_nada() throws Exception {
+    registra(clinicaA, "Ana", "(55) 1111-1111");
+    long beto = registra(clinicaA, "Beto", "5522222222");
+
+    como(
+            "recepcionista",
+            clinicaA,
+            conCuerpo(put(RUTA + "/" + beto), datos("Roberto", "55 1111 1111")))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.success").value(false));
+
+    como("recepcionista", clinicaA, get(RUTA + "/" + beto))
+        .andExpect(jsonPath("$.data.nombre").value("Beto"))
+        .andExpect(jsonPath("$.data.telefono").value("5522222222"));
+  }
+
+  @Test
+  void editar_conservando_el_propio_telefono_no_es_duplicado() throws Exception {
+    long ana = registra(clinicaA, "Ana", "5511111111");
+
+    como("recepcionista", clinicaA, conCuerpo(put(RUTA + "/" + ana), datos("Ana", "55 1111 1111")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.telefono").value("55 1111 1111"));
+  }
+
+  @Test
+  void con_confirmacion_se_puede_editar_al_telefono_de_otro_y_seguir_editando() throws Exception {
+    registra(clinicaA, "Ana", "5511111111");
+    long beto = registra(clinicaA, "Beto", "5522222222");
+    String confirmado =
+        """
+        {"nombre": "Beto", "telefono": "5511111111", "confirmarDuplicado": true}""";
+
+    como("recepcionista", clinicaA, conCuerpo(put(RUTA + "/" + beto), confirmado))
+        .andExpect(status().isOk());
+
+    // Una vez confirmado, cambiar otros datos no vuelve a pedir confirmación.
+    como(
+            "recepcionista",
+            clinicaA,
+            conCuerpo(put(RUTA + "/" + beto), datos("Roberto", "5511111111")))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void dos_ediciones_simultaneas_hacia_el_mismo_telefono_solo_dejan_pasar_una() throws Exception {
+    long ana = registra(clinicaA, "Ana", "5511111111");
+    long beto = registra(clinicaA, "Beto", "5522222222");
+    ExecutorService ejecutor = Executors.newFixedThreadPool(2);
+    try {
+      for (int vuelta = 0; vuelta < 10; vuelta++) {
+        String cuerpo = datos("Cambio", "55000000%02d".formatted(vuelta));
+        CountDownLatch salida = new CountDownLatch(1);
+        List<Future<Integer>> ediciones = new ArrayList<>();
+        for (long id : new long[] {ana, beto}) {
+          ediciones.add(
+              ejecutor.submit(
+                  () -> {
+                    salida.await();
+                    return como("recepcionista", clinicaA, conCuerpo(put(RUTA + "/" + id), cuerpo))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+                  }));
+        }
+        salida.countDown();
+
+        assertThat(
+                List.of(
+                    ediciones.get(0).get(30, TimeUnit.SECONDS),
+                    ediciones.get(1).get(30, TimeUnit.SECONDS)))
+            .as("una edición gana y la otra recibe conflicto")
+            .containsExactlyInAnyOrder(200, 409);
+      }
+    } finally {
+      ejecutor.shutdownNow();
+    }
+  }
+
+  /**
+   * Deliberado (revisión de #235): {@code @Valid} actúa antes que {@code @PreAuthorize}, así que un
+   * {@code cliente} con datos inválidos recibe 422, y con datos válidos 403. Solo revela reglas de
+   * validación.
+   */
+  @Test
+  void un_cliente_con_datos_invalidos_recibe_422_antes_que_403() throws Exception {
+    como("cliente", clinicaA, conCuerpo(post(RUTA), datos("", "5511111111")))
+        .andExpect(status().is(422));
+
+    assertThat(cuenta(clinicaA)).isZero();
+  }
+
+  @Test
   void dos_altas_simultaneas_del_mismo_telefono_crean_una_sola() throws Exception {
     ExecutorService ejecutor = Executors.newFixedThreadPool(2);
     try {

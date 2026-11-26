@@ -45,7 +45,14 @@ public class PropietarioService {
   public PropietarioResponse editar(long id, PropietarioRequest datos) {
     Propietario propietario = buscar(id);
     rechazarDireccion(datos);
-    propietario.editar(datos.nombre().strip(), datos.telefono().strip(), opcional(datos.correo()));
+    String telefono = datos.telefono().strip();
+    // Mismo candado que el alta: dos fichas no pueden pasar a la vez al mismo teléfono.
+    propietarios.bloquearTelefono(telefono);
+    if (!Boolean.TRUE.equals(datos.confirmarDuplicado())
+        && propietarios.cambiaAlTelefonoDeOtro(id, telefono)) {
+      throw new TelefonoDuplicadoException();
+    }
+    propietario.editar(datos.nombre().strip(), telefono, opcional(datos.correo()));
     return aFicha(propietarios.saveAndFlush(propietario));
   }
 

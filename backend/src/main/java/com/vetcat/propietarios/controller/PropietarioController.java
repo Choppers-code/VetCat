@@ -16,7 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Propietarios de la clínica del token. El {@code cliente} no usa estos endpoints. */
+/**
+ * Propietarios de la clínica del token. El {@code cliente} no usa estos endpoints.
+ *
+ * <p>La entrada se valida antes que el permiso: un {@code cliente} con datos inválidos recibe 422 y
+ * con datos válidos 403. Es deliberado, porque solo revela reglas de validación.
+ */
 @RestController
 @RequestMapping("/api/v1/propietarios")
 @PreAuthorize("hasAnyRole('clinica_admin', 'recepcionista', 'veterinario')")

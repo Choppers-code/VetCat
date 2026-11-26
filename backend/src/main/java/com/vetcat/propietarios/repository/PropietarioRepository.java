@@ -34,4 +34,19 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
           """,
       nativeQuery = true)
   boolean existeConTelefono(@Param("telefono") String telefono);
+
+  /**
+   * Indica si el teléfono es nuevo para ese propietario y ya lo tiene otro. Conservar el propio no
+   * cuenta, aunque se comparta con otra ficha por un duplicado confirmado.
+   */
+  @Query(
+      value =
+          """
+          SELECT EXISTS (SELECT 1 FROM propietario otro, propietario propio
+              WHERE propio.id = :id AND otro.id <> propio.id
+              AND otro.telefono_normalizado = regexp_replace(:telefono, '\\D', '', 'g')
+              AND otro.telefono_normalizado <> propio.telefono_normalizado)
+          """,
+      nativeQuery = true)
+  boolean cambiaAlTelefonoDeOtro(@Param("id") long id, @Param("telefono") String telefono);
 }

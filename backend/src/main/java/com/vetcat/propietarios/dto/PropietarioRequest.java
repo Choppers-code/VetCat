@@ -8,7 +8,8 @@ import jakarta.validation.constraints.Size;
 /**
  * Datos para registrar o editar un propietario.
  *
- * @param confirmarDuplicado solo cuenta al registrar: crea la ficha aunque el teléfono ya exista
+ * @param confirmarDuplicado al registrar o editar, guarda la ficha aunque otro propietario ya tenga
+ *     ese teléfono
  */
 public record PropietarioRequest(
     @NotBlank(message = "El nombre es obligatorio")
