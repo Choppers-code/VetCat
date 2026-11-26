@@ -26,7 +26,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers
 @SpringBootTest(
     properties = {
-      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba",
+      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba,com.vetcat.citas.entity",
       "vetcat.token.clave=clave-de-prueba-con-mas-de-32-bytes-para-hmac",
       "vetcat.identidad.emisor=http://keycloak-de-prueba/realms/vetcat",
       "vetcat.identidad.jwk-set-uri=http://127.0.0.1:1/certs"

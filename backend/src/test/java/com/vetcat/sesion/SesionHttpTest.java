@@ -48,7 +48,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers
 @SpringBootTest(
     properties = {
-      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba",
+      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba,com.vetcat.citas.entity",
       "vetcat.token.clave=clave-de-prueba-con-mas-de-32-bytes-para-hmac"
     })
 @AutoConfigureMockMvc
