@@ -80,13 +80,42 @@ services:
       FLYWAY_USER: ${VETCAT_DB_USER}
       FLYWAY_PASSWORD: ${VETCAT_DB_PASSWORD}
       FLYWAY_SCHEMAS: catalogo
-      # La ubicación de tenant llega con el bucle de migración por clínica
-      # (fase 2); hoy solo existe la del catálogo.
+      # Los esquemas de clínica se migran con `migraciones-tenant`.
       FLYWAY_LOCATIONS: filesystem:/flyway/catalogo
       FLYWAY_CREATE_SCHEMAS: "true"
       FLYWAY_CONNECT_RETRIES: "10"
     volumes:
       - ../../database/migrations/catalogo:/flyway/catalogo:ro
+
+  # Migra UN esquema de clínica con el historial de `database/migrations/tenant`.
+  # El esquema llega en cada ejecución, nunca fijo aquí:
+  #   docker compose run --rm -e FLYWAY_SCHEMAS=clinica_001,ext \
+  #     -e FLYWAY_DEFAULT_SCHEMA=clinica_001 migraciones-tenant
+  # `scripts/sembrar-demo.ps1` lo corre para cada clínica del catálogo y deja el
+  # estado en `catalogo.migracion_tenant` (docs/Despliegue_y_operacion.md §5).
+  # `ext` va en la lista porque ahí vive btree_gist, igual que en MigradorTenant.
+  # Sin un esquema `clinica_NNN` se niega a correr: Flyway caería en `public` y
+  # crearía ahí las tablas de una clínica.
+  migraciones-tenant:
+    image: flyway/flyway:11.14.1-alpine
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        case "$$FLYWAY_DEFAULT_SCHEMA" in
+        clinica_[0-9][0-9][0-9]*) exec flyway migrate ;;
+        *) echo "Falta FLYWAY_DEFAULT_SCHEMA=clinica_NNN" >&2; exit 2 ;;
+        esac
+    profiles: ["migraciones-tenant"]
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${VETCAT_DB}
+      FLYWAY_USER: ${VETCAT_DB_USER}
+      FLYWAY_PASSWORD: ${VETCAT_DB_PASSWORD}
+      FLYWAY_LOCATIONS: filesystem:/flyway/tenant
+      FLYWAY_CREATE_SCHEMAS: "true"
+      FLYWAY_CONNECT_RETRIES: "10"
+    volumes:
+      - ../../database/migrations/tenant:/flyway/tenant:ro
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.2
