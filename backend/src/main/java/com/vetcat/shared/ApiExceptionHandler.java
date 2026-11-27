@@ -67,7 +67,8 @@ public class ApiExceptionHandler {
     String mensaje =
         excepcion.getBindingResult().getFieldErrors().stream()
             .sorted(Comparator.comparing(FieldError::getField))
-            .map(FieldError::getDefaultMessage)
+            // Un fallo de conversión trae nombres de clases Java: no sale al cliente.
+            .map(e -> e.isBindingFailure() ? "La entrada no es válida" : e.getDefaultMessage())
             .findFirst()
             .orElse("La entrada no es válida");
     return Sobre.error(mensaje);
