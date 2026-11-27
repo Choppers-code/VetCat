@@ -60,6 +60,8 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 
 **Realm de Keycloak.** `--import-realm` solo importa `realm-vetcat.json` si el realm `vetcat` todavía no existe. Quien ya levantó el stack antes de un cambio en ese archivo no lo recibe con `up -d`: hay que borrar el realm desde la consola de Keycloak (*Realm settings → Action → Delete*) y reiniciar el servicio con `docker compose -f infrastructure\docker\compose.yaml restart keycloak`. Se pierden los usuarios de prueba de ese realm, nada más.
 
+**Tema de inicio de sesión.** Vive en `infrastructure/keycloak/themes/vetcat` y el compose lo monta en Keycloak. En un realm que ya existe no hace falta borrarlo: tras `docker compose -f infrastructure\docker\compose.yaml up -d`, en la consola de Keycloak elige *Realm settings → Themes → Login theme → vetcat* y, en *Localization*, activa el español como idioma por defecto. En la nube hay que llevar la carpeta del tema junto al despliegue de Keycloak.
+
 **Puertos.** Todos se publican en `127.0.0.1`, nunca fuera de la máquina.
 
 | Servicio | Máquina | Contenedor | Nota |

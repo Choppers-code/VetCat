@@ -152,6 +152,8 @@ services:
       # Solo lectura: el export del realm vive en el repositorio y se importa al
       # arrancar. Sin usuarios y sin secretos (docs/Despliegue_y_operacion.md §12).
       - ../keycloak:/opt/keycloak/data/import:ro
+      # Tema de inicio de sesión de VetCat; el realm lo usa por su nombre.
+      - ../keycloak/themes/vetcat:/opt/keycloak/themes/vetcat:ro
     depends_on:
       postgres-init:
         condition: service_completed_successfully

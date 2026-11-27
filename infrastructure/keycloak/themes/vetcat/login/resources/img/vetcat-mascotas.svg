@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 120">
+  <!-- Ilustración propia de VetCat: la misma que dibuja la app -->
+  <g>
+    <path d="M26 120c0-26 15-40 34-40s34 14 34 40z" fill="#e0a55c"/>
+    <path d="M45 120c0-17 6-28 15-28s15 11 15 28z" fill="#f8dfb6"/>
+    <ellipse cx="60" cy="54" rx="33" ry="34" fill="#e9b26a"/>
+    <path d="M33 30C18 28 9 45 12 66c2 13 14 14 20 3 4-9 5-22 1-39zM87 30c15-2 24 15 21 36-2 13-14 14-20 3-4-9-5-22-1-39z" fill="#c98741"/>
+    <ellipse cx="60" cy="68" rx="20" ry="17" fill="#f8dfb6"/>
+    <circle cx="47" cy="49" r="4.6" fill="#2b2320"/><circle cx="73" cy="49" r="4.6" fill="#2b2320"/>
+    <circle cx="48.6" cy="47.4" r="1.5" fill="#fff"/><circle cx="74.6" cy="47.4" r="1.5" fill="#fff"/>
+    <ellipse cx="60" cy="61" rx="7.5" ry="5.5" fill="#2b2320"/>
+    <path d="M55 75q5 14 10 0z" fill="#f2737a"/>
+    <path d="M51 72q9 7 18 0" stroke="#2b2320" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M38 86q22 12 44 0l-2 8q-20 10-40 0z" fill="#0e7c86"/><circle cx="60" cy="98" r="5" fill="#f28c6b"/>
+  </g>
+  <g transform="translate(100 0)">
+    <path d="M30 120c0-27 12-42 30-42s30 15 30 42z" fill="#9aa3a8"/>
+    <path d="M47 120c0-18 5-30 13-30s13 12 13 30z" fill="#f4f5f5"/>
+    <path d="M28 44L27 10l25 19zM92 44l1-34-25 19z" fill="#8d969b"/>
+    <path d="M32 35l-1-17 13 10zM88 35l1-17-13 10z" fill="#f6b7a8"/>
+    <ellipse cx="60" cy="55" rx="34" ry="30" fill="#a3acb1"/>
+    <path d="M60 26v13M49 28l3 11M71 28l-3 11M27 54l11 2M28 64l11-1M93 54l-11 2M92 64l-11-1" stroke="#6c757a" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="60" cy="69" rx="17" ry="12" fill="#f4f5f5"/>
+    <ellipse cx="46" cy="53" rx="6" ry="7" fill="#a8c94a"/><ellipse cx="74" cy="53" rx="6" ry="7" fill="#a8c94a"/>
+    <ellipse cx="46" cy="53" rx="2.2" ry="6" fill="#2b2320"/><ellipse cx="74" cy="53" rx="2.2" ry="6" fill="#2b2320"/>
+    <circle cx="48" cy="50" r="1.6" fill="#fff"/><circle cx="76" cy="50" r="1.6" fill="#fff"/>
+    <path d="M55.5 63h9L60 68z" fill="#e7877e"/>
+    <path d="M60 68q-1 5-7 4M60 68q1 5 7 4" stroke="#4a5255" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M43 68L18 65M43 72l-23 5M77 68l25-3M77 72l23 5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 138">
+  <!-- Marca propia de VetCat -->
+  <g transform="translate(50 0)" fill="#0e7c86">
+    <ellipse cx="14" cy="42" rx="11" ry="14" transform="rotate(-22 14 42)"/>
+    <ellipse cx="36" cy="17" rx="11.5" ry="15" transform="rotate(-8 36 17)"/>
+    <ellipse cx="64" cy="17" rx="11.5" ry="15" transform="rotate(8 64 17)"/>
+    <ellipse cx="86" cy="42" rx="11" ry="14" transform="rotate(22 86 42)"/>
+    <path d="M50 37c17 0 31 18 31 33 0 13-10 19-19 19-5 0-7-3-12-3s-7 3-12 3c-9 0-19-6-19-19 0-15 14-33 31-33z"/>
+    <path d="M45 52h10v9h9v10h-9v9H45v-9h-9V61h9z" fill="#ffffff"/>
+  </g>
+  <text x="100" y="130" text-anchor="middle" font-family="system-ui, Roboto, Segoe UI, sans-serif" font-size="40" font-weight="800" fill="#1e2a2b">Vet<tspan fill="#0e7c86">Cat</tspan></text>
+</svg>

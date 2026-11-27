@@ -1,0 +1,202 @@
+/*
+ * Estilo de VetCat sobre el tema oficial keycloak.v2. Los colores son los de
+ * frontend/packages/ui/lib/src/tokens.dart: si cambian allí, cambian aquí.
+ * Nada se carga de otros servidores.
+ */
+:root {
+    --vc-principal: #0e7c86;
+    --vc-principal-oscuro: #0a5f67;
+    --vc-acento: #f28c6b;
+    --vc-fondo: #f7fafa;
+    --vc-superficie: #ffffff;
+    --vc-texto: #1e2a2b;
+    --vc-secundario: #536668;
+    --vc-borde: #d3e0e1;
+    --vc-pildora: 28px;
+    --vc-fuente: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* El fondo va solo en la raíz: así la mancha de la esquina se ve. */
+.login-pf {
+    background: var(--vc-fondo);
+}
+
+.login-pf body {
+    background: transparent;
+    color: var(--vc-texto);
+    font-family: var(--vc-fuente);
+}
+
+/* Mancha turquesa de la esquina, como en la app. */
+.login-pf body::before {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    top: -130px;
+    right: -110px;
+    width: 260px;
+    height: 200px;
+    border-radius: 50%;
+    background: var(--vc-principal);
+}
+
+.pf-v5-c-login__container {
+    grid-template-columns: minmax(0, 28rem);
+    padding-inline: 16px;
+}
+
+/* Marca */
+#kc-header {
+    padding-block: 8px 12px;
+}
+
+#kc-header-wrapper {
+    height: 128px;
+    padding: 0;
+    font-size: 0;
+    background: url("../img/vetcat-marca.svg") center / contain no-repeat;
+}
+
+/* Tarjeta */
+.pf-v5-c-login__main {
+    border-radius: 24px;
+    background: var(--vc-superficie);
+    box-shadow: 0 6px 22px rgba(20, 70, 75, 0.1);
+}
+
+.pf-v5-c-login__main-header {
+    border-top: 0;
+}
+
+#kc-page-title {
+    font-family: var(--vc-fuente);
+    font-weight: 700;
+    color: var(--vc-texto);
+}
+
+body[data-page-id="login-login"] #kc-page-title::after {
+    content: "Inicia sesión para continuar";
+    display: block;
+    margin-top: 4px;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--vc-secundario);
+}
+
+.pf-v5-c-form__label-text {
+    font-family: var(--vc-fuente);
+    color: var(--vc-texto);
+}
+
+/* Campos en píldora */
+.pf-v5-c-form-control {
+    min-height: 48px;
+    align-items: center;
+    border: 1.5px solid var(--vc-borde);
+    border-radius: var(--vc-pildora);
+    background: var(--vc-superficie);
+    overflow: hidden;
+}
+
+.pf-v5-c-form-control::before,
+.pf-v5-c-form-control::after {
+    border: 0;
+}
+
+.pf-v5-c-form-control > input {
+    padding-inline: 18px;
+    font-family: var(--vc-fuente);
+}
+
+.pf-v5-c-form-control:focus-within {
+    border-color: var(--vc-principal);
+    box-shadow: 0 0 0 1px var(--vc-principal);
+}
+
+/* El foco lo marca la píldora; sin esto Android dibuja un segundo marco. */
+.pf-v5-c-form-control > input:focus,
+.pf-v5-c-form-control > input:focus-visible {
+    outline: none;
+}
+
+.pf-v5-c-form-control.pf-m-error {
+    border-color: var(--pf-v5-global--danger-color--100);
+}
+
+/* Contraseña: el campo y el botón de mostrarla forman una sola píldora. */
+.pf-v5-c-input-group {
+    border: 1.5px solid var(--vc-borde);
+    border-radius: var(--vc-pildora);
+    background: var(--vc-superficie);
+    overflow: hidden;
+}
+
+.pf-v5-c-input-group:focus-within {
+    border-color: var(--vc-principal);
+    box-shadow: 0 0 0 1px var(--vc-principal);
+}
+
+.pf-v5-c-input-group .pf-v5-c-form-control {
+    border: 0;
+    box-shadow: none;
+}
+
+.pf-v5-c-button.pf-m-control {
+    color: var(--vc-secundario);
+}
+
+.pf-v5-c-button.pf-m-control::after {
+    border: 0;
+}
+
+/* Botones */
+.pf-v5-c-button.pf-m-primary {
+    min-height: 48px;
+    border-radius: var(--vc-pildora);
+    background: var(--vc-principal);
+    font-family: var(--vc-fuente);
+    font-weight: 600;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:focus {
+    background: var(--vc-principal-oscuro);
+}
+
+.pf-v5-c-button.pf-m-secondary {
+    min-height: 48px;
+    align-content: center;
+    border-radius: var(--vc-pildora);
+    color: var(--vc-principal);
+}
+
+/* PatternFly dibuja el borde del botón secundario en ::after. */
+.pf-v5-c-button.pf-m-secondary::after {
+    border-color: var(--vc-borde);
+    border-radius: var(--vc-pildora);
+}
+
+a,
+.pf-v5-c-button.pf-m-link {
+    color: var(--vc-principal);
+    font-weight: 600;
+}
+
+a:hover {
+    color: var(--vc-principal-oscuro);
+}
+
+/* Mascotas al pie */
+.pf-v5-c-login__container::after {
+    content: "";
+    display: block;
+    height: 110px;
+    margin-top: 8px;
+    background: url("../img/vetcat-mascotas.svg") center bottom / contain no-repeat;
+}
+
+@media (max-height: 640px) {
+    .pf-v5-c-login__container::after {
+        display: none;
+    }
+}
