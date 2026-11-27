@@ -29,6 +29,23 @@ void main() {
         VetcatColores.texto,
         VetcatColores.superficie,
       ),
+      'texto secundario sobre el fondo': (
+        VetcatColores.textoSecundario,
+        VetcatColores.fondo,
+      ),
+      'texto secundario sobre la superficie': (
+        VetcatColores.textoSecundario,
+        VetcatColores.superficie,
+      ),
+      'texto sobre el turquesa suave': (
+        VetcatColores.principalOscuro,
+        VetcatColores.suave,
+      ),
+      'texto sobre durazno': (VetcatColores.texto, VetcatColores.durazno),
+      'texto sobre el turquesa oscuro': (
+        VetcatColores.sobrePrincipal,
+        VetcatColores.principalOscuro,
+      ),
       'texto sobre éxito': (VetcatColores.sobreEstado, VetcatColores.exito),
       'texto sobre aviso': (VetcatColores.sobreEstado, VetcatColores.aviso),
       'texto sobre error': (VetcatColores.sobreEstado, VetcatColores.error),
@@ -45,10 +62,55 @@ void main() {
     expect(tema.colorScheme.primary, VetcatColores.principal);
     expect(tema.colorScheme.secondary, VetcatColores.acento);
     expect(tema.scaffoldBackgroundColor, VetcatColores.fondo);
-    expect(
-      tema.textTheme.headlineMedium?.fontSize,
-      VetcatTipografia.titulo,
-    );
+    expect(tema.textTheme.headlineMedium?.fontSize, VetcatTipografia.titulo);
+  });
+
+  group('formas del rediseño', () {
+    final tema = VetcatTema.claro;
+
+    RoundedRectangleBorder forma(ButtonStyle? estilo) =>
+        estilo!.shape!.resolve({})! as RoundedRectangleBorder;
+
+    test('los botones son píldoras', () {
+      final esperado = BorderRadius.circular(VetcatRadios.pildora);
+
+      expect(forma(tema.filledButtonTheme.style).borderRadius, esperado);
+      expect(forma(tema.outlinedButtonTheme.style).borderRadius, esperado);
+    });
+
+    test('el botón flotante también es una píldora', () {
+      final figura =
+          tema.floatingActionButtonTheme.shape! as RoundedRectangleBorder;
+
+      expect(figura.borderRadius, BorderRadius.circular(VetcatRadios.pildora));
+    });
+
+    test('los campos son píldoras', () {
+      final borde =
+          tema.inputDecorationTheme.enabledBorder! as OutlineInputBorder;
+
+      expect(borde.borderRadius, BorderRadius.circular(VetcatRadios.pildora));
+    });
+
+    test('las tarjetas son redondeadas, sin borde y con sombra', () {
+      final figura = tema.cardTheme.shape! as RoundedRectangleBorder;
+
+      expect(figura.borderRadius, BorderRadius.circular(VetcatRadios.xl));
+      expect(figura.side, BorderSide.none);
+      expect(tema.cardTheme.elevation, greaterThan(0));
+      expect(tema.cardTheme.shadowColor, VetcatColores.sombra);
+    });
+
+    test('la barra es clara y los iconos del sistema se leen', () {
+      final barra = tema.appBarTheme;
+
+      expect(barra.backgroundColor, VetcatColores.fondo);
+      expect(barra.foregroundColor, VetcatColores.texto);
+      expect(
+        barra.systemOverlayStyle?.statusBarIconBrightness,
+        Brightness.dark,
+      );
+    });
   });
 
   test('no hay colores escritos a mano fuera de tokens.dart', () {
@@ -57,7 +119,9 @@ void main() {
         .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
-        .where((f) => !f.path.replaceAll('\\', '/').endsWith('src/tokens.dart'));
+        .where(
+          (f) => !f.path.replaceAll('\\', '/').endsWith('src/tokens.dart'),
+        );
     for (final f in archivos) {
       expect(
         prohibido.hasMatch(f.readAsStringSync()),

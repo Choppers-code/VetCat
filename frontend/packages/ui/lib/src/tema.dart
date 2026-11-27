@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'tokens.dart';
 
@@ -22,11 +23,11 @@ abstract final class VetcatTema {
     );
 
     final bordeCampo = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(VetcatRadios.m),
+      borderRadius: BorderRadius.circular(VetcatRadios.pildora),
       borderSide: const BorderSide(color: VetcatColores.borde),
     );
-    final forma = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(VetcatRadios.m),
+    final pildora = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(VetcatRadios.pildora),
     );
     const tamanoBoton = Size.fromHeight(VetcatEspaciado.objetivoTactil);
 
@@ -68,22 +69,29 @@ abstract final class VetcatTema {
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: VetcatColores.principal,
-        foregroundColor: VetcatColores.sobrePrincipal,
+        backgroundColor: VetcatColores.fondo,
+        foregroundColor: VetcatColores.texto,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
         color: VetcatColores.superficie,
-        elevation: 0,
-        shape: forma.copyWith(side: const BorderSide(color: VetcatColores.borde)),
+        elevation: VetcatElevacion.tarjeta,
+        shadowColor: VetcatColores.sombra,
+        surfaceTintColor: VetcatColores.superficie,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(VetcatRadios.xl),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: VetcatColores.superficie,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: VetcatEspaciado.m,
-          vertical: VetcatEspaciado.s,
+          horizontal: VetcatEspaciado.l,
+          vertical: VetcatEspaciado.m,
         ),
+        prefixIconColor: VetcatColores.principal,
         border: bordeCampo,
         enabledBorder: bordeCampo,
         focusedBorder: bordeCampo.copyWith(
@@ -93,16 +101,18 @@ abstract final class VetcatTema {
           borderSide: const BorderSide(color: VetcatColores.error),
         ),
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: VetcatColores.principal,
+        foregroundColor: VetcatColores.sobrePrincipal,
+        shape: pildora,
+      ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: tamanoBoton,
-          shape: forma,
-        ),
+        style: FilledButton.styleFrom(minimumSize: tamanoBoton, shape: pildora),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: tamanoBoton,
-          shape: forma,
+          shape: pildora,
           side: const BorderSide(color: VetcatColores.principal),
         ),
       ),

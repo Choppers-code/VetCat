@@ -2,8 +2,8 @@
 /// tipografía, los espaciados y los radios. Cambiar el aspecto de la app es
 /// cambiar este archivo; el resto del código solo los referencia.
 ///
-/// Paleta propuesta por el área 4 (turquesa con acento coral), pendiente de
-/// aprobación del equipo (ver issue #60).
+/// Paleta del área 4 (turquesa con acento coral, issue #60), ampliada para el
+/// rediseño minimalista (#263).
 library;
 
 import 'package:flutter/painting.dart';
@@ -20,6 +20,21 @@ abstract final class VetcatColores {
   static const Color superficie = Color(0xFFFFFFFF);
   static const Color texto = Color(0xFF1E2A2B);
   static const Color borde = Color(0xFFD3E0E1);
+
+  /// Texto de apoyo: subtítulos y ayudas.
+  static const Color textoSecundario = Color(0xFF536668);
+
+  /// Turquesa para degradados y para texto sobre [suave].
+  static const Color principalOscuro = Color(0xFF0A5F67);
+
+  /// Fondo turquesa tenue de iconos y selecciones.
+  static const Color suave = Color(0xFFE3F2F3);
+
+  /// Fondo coral tenue de avisos amables.
+  static const Color durazno = Color(0xFFFDE6DD);
+
+  /// Sombra de las tarjetas.
+  static const Color sombra = Color(0x2414464B);
 
   static const Color exito = Color(0xFF2E7D32);
   static const Color aviso = Color(0xFF9A5B00);
@@ -65,4 +80,15 @@ abstract final class VetcatRadios {
   static const double s = 8;
   static const double m = 12;
   static const double l = 16;
+
+  /// Tarjetas.
+  static const double xl = 20;
+
+  /// Botones y campos: extremos completamente redondos.
+  static const double pildora = 28;
+}
+
+/// Elevaciones.
+abstract final class VetcatElevacion {
+  static const double tarjeta = 3;
 }
