@@ -92,6 +92,7 @@ Reglas asociadas:
 - Un widget usado dos veces vive en el design system, no se copia.
 - La app y la consola comparten la interfaz de sesión, no la implementación: `flutter_appauth` en móvil y `openid_client` en el navegador (ADR-0004).
 - En el navegador los tokens viven en memoria y CORS se abre solo al origen de la consola, nunca con `*` ni con credenciales.
+- Los generados de freezed y json_serializable (`*.freezed.dart`, `*.g.dart`) **se commitean** y no se editan a mano. Tras cambiar un modelo en `frontend/packages/core`: `dart run build_runner build` y commitear el resultado. El check `analyze y test` los regenera con las versiones del `pubspec.lock` de core y falla si algo cambia.
 
 ## 4. Reglas de datos
 
