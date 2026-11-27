@@ -232,12 +232,63 @@ class MascotasTest {
   }
 
   @Test
-  void sin_token_responde_401() throws Exception {
-    mockMvc.perform(conCuerpo(post(RUTA), nueva(1, "Luna"))).andExpect(status().isUnauthorized());
-    mockMvc.perform(get(RUTA + "/1")).andExpect(status().isUnauthorized());
+  void sin_token_responde_401_con_el_sobre() throws Exception {
+    mockMvc
+        .perform(conCuerpo(post(RUTA), nueva(1, "Luna")))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.data").doesNotExist());
+    mockMvc
+        .perform(get(RUTA + "/1"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false));
     mockMvc
         .perform(conCuerpo(put(RUTA + "/1"), cambios("Sol")))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false));
+    assertThat(cuenta(clinicaA)).isZero();
+  }
+
+  /** Matriz de roles: `super_admin` no opera datos de una clínica (#170). */
+  @Test
+  void super_admin_con_token_de_clinica_recibe_403_y_no_cambia_nada() throws Exception {
+    registra(clinicaA, "Luna");
+
+    como("super_admin", clinicaA, conCuerpo(post(RUTA), nueva(1, "Otra")))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.success").value(false));
+    como("super_admin", clinicaA, get(RUTA + "/1"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.data").doesNotExist());
+    como("super_admin", clinicaA, conCuerpo(put(RUTA + "/1"), cambios("Otra")))
+        .andExpect(status().isForbidden());
+
+    assertThat(cuenta(clinicaA)).isEqualTo(1);
+    assertThat(valor("SELECT nombre FROM " + clinicaA.esquema() + ".mascota")).isEqualTo("Luna");
+  }
+
+  /**
+   * Las dos clínicas tienen un propietario 1 y una mascota 1. Con el token de una, el id 1 es
+   * siempre el suyo, al leer y al editar (#175).
+   */
+  @Test
+  void con_el_mismo_id_en_las_dos_clinicas_cada_una_ve_y_edita_solo_la_suya() throws Exception {
+    long deA = registra(clinicaA, "Luna");
+    long deB = registra(clinicaB, "Nube");
+    assertThat(deA).isEqualTo(deB);
+
+    como("veterinario", clinicaB, get(RUTA + "/" + deB))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.nombre").value("Nube"));
+    como("veterinario", clinicaB, conCuerpo(put(RUTA + "/" + deB), cambios("Nube Sur")))
+        .andExpect(status().isOk());
+
+    como("veterinario", clinicaA, get(RUTA + "/" + deA))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.nombre").value("Luna"));
+    assertThat(valor("SELECT nombre FROM " + clinicaA.esquema() + ".mascota")).isEqualTo("Luna");
+    assertThat(valor("SELECT nombre FROM " + clinicaB.esquema() + ".mascota"))
+        .isEqualTo("Nube Sur");
   }
 
   @Test
