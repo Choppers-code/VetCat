@@ -183,7 +183,7 @@ void main() {
       await tester.tap(find.text('Clínica 1'));
       await tester.pumpAndSettle();
       final contenedor = ProviderScope.containerOf(
-        tester.element(find.byType(Scaffold)),
+        tester.element(find.byType(Scaffold).first),
       );
       final sub = contenedor.listen(datos, (_, _) {});
       expect(sub.read(), startsWith('datos de 1'));
