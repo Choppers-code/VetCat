@@ -76,7 +76,10 @@ public class CitasService {
                     error(
                         HttpStatus.NOT_FOUND,
                         "No se encontró un veterinario activo en la clínica"));
-    if (identidad.getClaimAsStringList("roles").contains("veterinario")) {
+    List<String> roles = identidad.getClaimAsStringList("roles");
+    if (roles.contains("veterinario")
+        && !roles.contains("clinica_admin")
+        && !roles.contains("recepcionista")) {
       UUID usuario = identidadDelVeterinario(identidad.getSubject());
       if (!keycloakIdVeterinario.equals(usuario)) {
         throw error(

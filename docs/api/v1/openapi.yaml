@@ -292,8 +292,10 @@ paths:
       description: >-
         Roles: clinica_admin, recepcionista, veterinario. La cita nace
         PENDIENTE. veterinarioId identifica la membresía activa del veterinario
-        en catalogo.usuario_clinica. Un actor con rol veterinario solo puede
-        crear citas cuando esa membresía corresponde al sub de su token.
+        en catalogo.usuario_clinica. La restricción a la agenda propia aplica
+        solo cuando veterinario es el único rol con permiso de crear citas;
+        quien también tenga clinica_admin o recepcionista puede asignar otro
+        veterinario activo de la clínica.
         consultorioId, veterinarioId y mascotaId deben pertenecer a la clínica
         activa; el consultorio, la mascota y la membresía deben estar activos.
         Devuelve 404 si un identificador no existe en la clínica activa. Devuelve

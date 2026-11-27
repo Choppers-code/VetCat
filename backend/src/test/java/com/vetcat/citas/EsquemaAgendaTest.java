@@ -633,6 +633,25 @@ class EsquemaAgendaTest {
   }
 
   @Test
+  void clinica_admin_y_veterinario_pueden_asignar_a_otro_veterinario() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String token =
+        tokens.emitir(
+            VETERINARIO_UUID.toString(), clinicaId, List.of("clinica_admin", "veterinario"));
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, otroVeterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.veterinarioId").value(otroVeterinarioId));
+  }
+
+  @Test
   void rechaza_veterinario_inactivo_y_datos_de_otra_clinica() throws Exception {
     EscenarioCita escenario = escenarioCita();
     String token = tokenAdmin();
