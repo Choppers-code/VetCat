@@ -25,7 +25,7 @@ public class MascotaFachada {
         .toList();
   }
 
-  private static MascotaResponse aRespuesta(Mascota mascota) {
+  static MascotaResponse aRespuesta(Mascota mascota) {
     return new MascotaResponse(
         mascota.getId(),
         mascota.getPropietarioId(),

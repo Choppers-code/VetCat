@@ -9,13 +9,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
  * Mascota del esquema de una clínica. Sin nombre de esquema: lo fija el {@code search_path}.
  *
- * <p>Por ahora solo se lee, para la ficha del propietario; el registro y la edición llegan con
- * #169.
+ * <p>El propietario se fija al crearla; {@link #editar} no lo toca.
  */
 @Entity
 @Table(name = "mascota")
@@ -49,7 +49,35 @@ public class Mascota {
 
   private boolean activo;
 
+  @Column(name = "actualizado_en")
+  private Instant actualizadoEn;
+
   protected Mascota() {}
+
+  /** Nueva mascota activa; los datos se completan con {@link #editar}. */
+  public Mascota(Long propietarioId) {
+    this.propietarioId = propietarioId;
+    this.activo = true;
+  }
+
+  /** Reemplaza los datos generales. */
+  public void editar(
+      String nombre,
+      Especie especie,
+      String raza,
+      Sexo sexo,
+      LocalDate fechaNacimiento,
+      BigDecimal pesoKg,
+      String notas) {
+    this.nombre = nombre;
+    this.especie = especie;
+    this.raza = raza;
+    this.sexo = sexo;
+    this.fechaNacimiento = fechaNacimiento;
+    this.pesoKg = pesoKg;
+    this.notas = notas;
+    this.actualizadoEn = Instant.now();
+  }
 
   public Long getId() {
     return id;

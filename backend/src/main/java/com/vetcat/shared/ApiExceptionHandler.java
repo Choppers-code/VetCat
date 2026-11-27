@@ -1,5 +1,6 @@
 package com.vetcat.shared;
 
+import com.vetcat.mascotas.service.MascotaNoEncontradaException;
 import com.vetcat.propietarios.service.DireccionNoDisponibleException;
 import com.vetcat.propietarios.service.PropietarioNoEncontradoException;
 import com.vetcat.propietarios.service.TelefonoDuplicadoException;
@@ -38,6 +39,12 @@ public class ApiExceptionHandler {
   @ExceptionHandler(PropietarioNoEncontradoException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public Sobre<Void> noEncontrado(PropietarioNoEncontradoException excepcion) {
+    return Sobre.error(excepcion.getMessage());
+  }
+
+  @ExceptionHandler(MascotaNoEncontradaException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public Sobre<Void> mascotaNoEncontrada(MascotaNoEncontradaException excepcion) {
     return Sobre.error(excepcion.getMessage());
   }
 

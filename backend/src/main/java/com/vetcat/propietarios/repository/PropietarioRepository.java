@@ -1,6 +1,7 @@
 package com.vetcat.propietarios.repository;
 
 import com.vetcat.propietarios.entity.Propietario;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +50,13 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
           """,
       nativeQuery = true)
   boolean cambiaAlTelefonoDeOtro(@Param("id") long id, @Param("telefono") String telefono);
+
+  /**
+   * Id del propietario si está activo, con un candado compartido hasta el fin de la transacción:
+   * una baja en curso hace esperar y una posterior espera a esta transacción.
+   */
+  @Query(
+      value = "SELECT id FROM propietario WHERE id = :id AND activo FOR SHARE",
+      nativeQuery = true)
+  Optional<Long> compartirActivo(@Param("id") long id);
 }
