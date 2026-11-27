@@ -262,14 +262,68 @@ class PropietariosTest {
   }
 
   @Test
-  void sin_token_responde_401() throws Exception {
+  void sin_token_responde_401_con_el_sobre() throws Exception {
     mockMvc
         .perform(conCuerpo(post(RUTA), datos("Ana", "5511111111")))
-        .andExpect(status().isUnauthorized());
-    mockMvc.perform(get(RUTA + "/1")).andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.data").doesNotExist());
+    mockMvc
+        .perform(get(RUTA + "/1"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false));
     mockMvc
         .perform(conCuerpo(put(RUTA + "/1"), datos("Ana", "5511111111")))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false));
+  }
+
+  /** Matriz de roles: `super_admin` no opera datos de una clínica (#170). */
+  @Test
+  void super_admin_con_token_de_clinica_recibe_403_y_no_cambia_nada() throws Exception {
+    long id = registra(clinicaA, "Ana", "5511111111");
+
+    como("super_admin", clinicaA, conCuerpo(post(RUTA), datos("Beto", "5522222222")))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.success").value(false));
+    como("super_admin", clinicaA, get(RUTA + "/" + id))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.data").doesNotExist());
+    como("super_admin", clinicaA, conCuerpo(put(RUTA + "/" + id), datos("Otro", "5511111111")))
+        .andExpect(status().isForbidden());
+
+    assertThat(cuenta(clinicaA)).isEqualTo(1);
+    como("clinica_admin", clinicaA, get(RUTA + "/" + id))
+        .andExpect(jsonPath("$.data.nombre").value("Ana"));
+  }
+
+  /**
+   * Los ids son por esquema: las dos clínicas tienen un propietario 1. Con el token de una, el id 1
+   * es siempre el suyo; si el `search_path` quedara en la otra clínica, esta prueba lo detecta
+   * (#175).
+   */
+  @Test
+  void con_el_mismo_id_en_las_dos_clinicas_cada_una_ve_y_edita_solo_el_suyo() throws Exception {
+    long deA = registra(clinicaA, "Ana", "5511111111");
+    long deB = registra(clinicaB, "Carla", "5522222222");
+    assertThat(deA).isEqualTo(deB);
+
+    como("clinica_admin", clinicaB, get(RUTA + "/" + deB))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.nombre").value("Carla"))
+        .andExpect(jsonPath("$.data.telefono").value("5522222222"));
+    como(
+            "clinica_admin",
+            clinicaB,
+            conCuerpo(put(RUTA + "/" + deB), datos("Carla Sur", "5522222222")))
+        .andExpect(status().isOk());
+
+    como("clinica_admin", clinicaA, get(RUTA + "/" + deA))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.nombre").value("Ana"))
+        .andExpect(jsonPath("$.data.telefono").value("5511111111"));
+    como("clinica_admin", clinicaB, get(RUTA + "/" + deB))
+        .andExpect(jsonPath("$.data.nombre").value("Carla Sur"));
   }
 
   @Test

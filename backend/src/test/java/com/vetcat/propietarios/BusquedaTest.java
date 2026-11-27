@@ -211,7 +211,51 @@ class BusquedaTest {
     como("cliente", clinicaA, get(RUTA).param("q", "maria"))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.success").value(false));
-    mockMvc.perform(get(RUTA).param("q", "maria")).andExpect(status().isUnauthorized());
+    mockMvc
+        .perform(get(RUTA).param("q", "maria"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.data").doesNotExist());
+  }
+
+  /** Matriz de roles: `super_admin` no busca en los datos de una clínica (#170). */
+  @Test
+  void super_admin_con_token_de_clinica_recibe_403() throws Exception {
+    como("super_admin", clinicaA, get(RUTA).param("q", "maria"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.data").doesNotExist());
+  }
+
+  /**
+   * Con datos en las dos clínicas y el mismo texto, cada una encuentra solo lo suyo, también con
+   * inactivos (#175).
+   */
+  @Test
+  void con_datos_en_las_dos_clinicas_cada_una_encuentra_solo_lo_suyo() throws Exception {
+    ejecuta(
+        """
+        INSERT INTO %s.propietario (nombre, telefono, activo) VALUES
+          ('María Sur', '5511112222', true),
+          ('Mario Baja Sur', '5533334444', false)
+        """
+            .formatted(clinicaB.esquema()));
+
+    assertThat(
+            nombres(
+                como(
+                    "clinica_admin",
+                    clinicaB,
+                    get(RUTA).param("q", "mari").param("incluirInactivos", "true"))))
+        .containsExactlyInAnyOrder("María Sur", "Mario Baja Sur");
+    assertThat(
+            nombres(
+                como(
+                    "clinica_admin",
+                    clinicaA,
+                    get(RUTA).param("q", "mari").param("incluirInactivos", "true"))))
+        .doesNotContain("María Sur", "Mario Baja Sur")
+        .contains("María Pérez");
   }
 
   @Test
