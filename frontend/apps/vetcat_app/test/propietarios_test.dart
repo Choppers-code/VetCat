@@ -67,7 +67,11 @@ class PropietariosFalso implements RepositorioDePropietarios {
   @override
   Future<PropietarioResponse> editar(int id, PropietarioRequest datos) async {
     ediciones.add(datos);
-    if (alEditar != null) throw alEditar!;
+    final error = alEditar;
+    if (error != null) {
+      alEditar = null; // solo falla la primera vez
+      throw error;
+    }
     return ficha0;
   }
 }
@@ -317,9 +321,7 @@ void main() {
       expect(find.text('Teléfono: 5551234'), findsOneWidget);
     });
 
-    testWidgets('un 409 al editar no ofrece crear un duplicado', (
-      tester,
-    ) async {
+    testWidgets('un 409 al editar pide confirmar y reenvía', (tester) async {
       repo.alEditar = errorDeApi(409, 'conflicto');
       await abrirFicha(tester);
       await tester.tap(find.text('Editar'));
@@ -327,12 +329,13 @@ void main() {
 
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
+      expect(find.text(mensajeDeDuplicadoAlEditar), findsOneWidget);
 
-      expect(find.text(mensajeDeDuplicado), findsNothing);
-      expect(
-        find.text(ErrorDeApi.mensajePorTipo(TipoDeError.conflicto)),
-        findsOneWidget,
-      );
+      await tester.tap(find.text('Guardar de todos modos'));
+      await tester.pumpAndSettle();
+
+      expect(repo.ediciones.map((d) => d.confirmarDuplicado), [false, true]);
+      expect(find.text('Teléfono: 5551234'), findsOneWidget);
     });
   });
 }

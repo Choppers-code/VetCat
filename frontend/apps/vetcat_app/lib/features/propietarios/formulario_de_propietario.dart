@@ -8,6 +8,8 @@ import 'repositorio_de_propietarios.dart';
 
 const mensajeDeDuplicado =
     'Ya existe un propietario con ese teléfono. ¿Registrarlo de todos modos?';
+const mensajeDeDuplicadoAlEditar =
+    'Otro propietario ya tiene ese teléfono. ¿Guardar de todos modos?';
 
 /// Alta y edición. La dirección solo se ofrece si el plan incluye visitas a
 /// domicilio; el backend la rechaza igual si se fuerza.
@@ -78,7 +80,9 @@ class _Estado extends ConsumerState<FormularioDePropietario> {
       ref.read(pasoProvider.notifier).ir(PasoFicha(guardado.id));
     } on ErrorDeApi catch (e) {
       if (!mounted) return;
-      if (e.tipo == TipoDeError.conflicto && original == null) {
+      // El único 409 de alta y edición es el teléfono repetido. Ya confirmado,
+      // no se vuelve a preguntar.
+      if (e.tipo == TipoDeError.conflicto && !confirmarDuplicado) {
         setState(() => _guardando = false);
         if (await _confirmarDuplicado() && mounted) {
           await _guardar(confirmarDuplicado: true);
@@ -99,10 +103,11 @@ class _Estado extends ConsumerState<FormularioDePropietario> {
   }
 
   Future<bool> _confirmarDuplicado() async {
+    final alta = widget.propietario == null;
     final acepta = await showDialog<bool>(
       context: context,
       builder: (contexto) => AlertDialog(
-        content: const Text(mensajeDeDuplicado),
+        content: Text(alta ? mensajeDeDuplicado : mensajeDeDuplicadoAlEditar),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(contexto, false),
@@ -110,7 +115,9 @@ class _Estado extends ConsumerState<FormularioDePropietario> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(contexto, true),
-            child: const Text('Registrar de todos modos'),
+            child: Text(
+              alta ? 'Registrar de todos modos' : 'Guardar de todos modos',
+            ),
           ),
         ],
       ),
@@ -133,28 +140,33 @@ class _Estado extends ConsumerState<FormularioDePropietario> {
                   : 'Editar propietario',
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _nombre,
               decoration: const InputDecoration(labelText: 'Nombre'),
               validator: _obligatorio,
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _telefono,
               decoration: const InputDecoration(labelText: 'Teléfono'),
               keyboardType: TextInputType.phone,
               validator: _obligatorio,
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _correo,
               decoration: const InputDecoration(labelText: 'Correo'),
               keyboardType: TextInputType.emailAddress,
               validator: _validarCorreo,
             ),
-            if (conDireccion)
+            if (conDireccion) ...[
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _direccion,
                 decoration: const InputDecoration(labelText: 'Dirección'),
               ),
+            ],
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
