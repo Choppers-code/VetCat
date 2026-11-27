@@ -168,6 +168,24 @@ void main() {
       expect(find.widgetWithText(TextField, 'ana'), findsNothing);
       expect(repo.consultas, ['ana']);
     });
+
+    testWidgets('otra clínica no conserva un alta a medias', (tester) async {
+      e.repositorio.lista = [clinica(1), clinica(2)];
+      await e.entrar(tester);
+      await tester.tap(find.text('Clínica 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nuevo propietario'));
+      await tester.pumpAndSettle();
+      await tester.enterText(campo('Nombre'), 'Dato de la clínica 1');
+
+      await tocarMenu(tester, 'Cambiar de clínica');
+      await tester.tap(find.text('Clínica 2'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dato de la clínica 1'), findsNothing);
+      expect(find.text('Guardar'), findsNothing);
+      expect(repo.registros, isEmpty);
+    });
   });
 
   group('ficha', () {
