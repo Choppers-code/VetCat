@@ -21,6 +21,15 @@ public class MascotaFachada {
     this.mascotas = mascotas;
   }
 
+  /** Mascota activa de la clínica actual, sin exponer el repositorio a otros módulos. */
+  public MascotaResponse activa(long id) {
+    return mascotas
+        .findById(id)
+        .filter(Mascota::isActivo)
+        .map(MascotaFachada::aRespuesta)
+        .orElseThrow(MascotaNoEncontradaException::new);
+  }
+
   /** Mascotas activas de varios propietarios, agrupadas por propietario. */
   public Map<Long, List<MascotaResponse>> activasDe(Collection<Long> propietarioIds) {
     if (propietarioIds.isEmpty()) {
