@@ -53,6 +53,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `VETCAT_APP_REDIRECT_URI` | `vetcat://callback` | `redirect_uri` del cliente `vetcat-app` |
 | `VETCAT_ADMIN_ORIGIN` | `http://localhost:8081` | Origen del cliente `vetcat-admin`: Web Origin y base de su `redirect_uri` |
 | `VETCAT_TOKEN_CLAVE` | valor local de 32+ bytes | Clave HMAC del token de tenant; la API no arranca sin ella |
+| `VETCAT_DB_URL` | `jdbc:postgresql://localhost:5432/vetcat_db` | URL JDBC de la API; su puerto es el de `POSTGRES_PORT` |
 | `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |

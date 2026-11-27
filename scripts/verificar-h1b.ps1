@@ -12,24 +12,30 @@
          como la app: sin flujo directo y sin secreto de cliente.
       3. GET  /api/v1/sesion/clinicas        con el token de identidad.
       4. POST /api/v1/sesion/clinicas/{id}   y lee el token de tenant.
-      5. Una ruta de negocio sin token responde 401.
+      5. Una ruta de negocio sin token responde 401; con el token de tenant,
+         registrar y consultar un propietario responde 201/200; con un rol
+         ajeno (`cliente` en otra clínica), registrar responde 403.
       6. El token de identidad no abre una ruta de negocio (401).
 
-    La parte de «con el token de tenant, 200; con un rol ajeno, 403» del paso 5
-    necesita un endpoint de negocio real y el contexto de tenant (#220); se
-    marca como pendiente.
+    Solo toca datos de prueba: un usuario `h1b@vetcat.dev` en Keycloak, las
+    clínicas «Clinica H1b» y «Clinica H1b cliente» en el catálogo y un
+    propietario de prueba en el esquema de la primera. Nada de esto va en el
+    export del realm.
 
-    Solo toca datos de prueba: un usuario `h1b@vetcat.dev` en Keycloak y una
-    clínica «Clinica H1b» en el catálogo. Nada de esto va en el export del realm.
+    El esquema de «Clinica H1b» tiene que estar migrado: corre antes
+    `.\scripts\sembrar-demo.ps1`, que migra el esquema de todas las clínicas.
 
 .PARAMETER ApiUrl
     Dónde escucha la API. Por defecto 8090, porque Keycloak ocupa el 8080.
     Antes de correr el script, en otra terminal:
         cd backend
         $env:SERVER_PORT = '8090'
+        $env:VETCAT_DB_URL = 'jdbc:postgresql://localhost:<POSTGRES_PORT de .env>/vetcat_db'
         $env:VETCAT_DB_PASSWORD = '<VETCAT_DB_PASSWORD de infrastructure\docker\.env>'
-        $env:VETCAT_TOKEN_CLAVE = 'clave-local-de-mas-de-32-bytes-solo-para-desarrollo'
+        $env:VETCAT_TOKEN_CLAVE = '<VETCAT_TOKEN_CLAVE de infrastructure\docker\.env>'
         .\gradlew.bat bootRun
+    VETCAT_DB_URL hace falta si POSTGRES_PORT no es 5432: sin ella la API se
+    conecta al PostgreSQL que ya tenga la máquina en ese puerto.
 
 .PARAMETER SoloKeycloak
     Hace solo los pasos 1 y 2. Útil para probar el realm sin la API.
@@ -116,7 +122,7 @@ $manejador.UseCookies = $false
 $cliente = New-Object System.Net.Http.HttpClient($manejador)
 $cookies = @{}
 
-function Invoke-Http([string]$Metodo, [string]$Url, [hashtable]$Formulario = $null, [string]$Bearer = '') {
+function Invoke-Http([string]$Metodo, [string]$Url, [hashtable]$Formulario = $null, [string]$Bearer = '', [string]$Json = '') {
     $peticion = New-Object System.Net.Http.HttpRequestMessage([System.Net.Http.HttpMethod]::new($Metodo), $Url)
     if ($cookies.Count -gt 0) {
         $peticion.Headers.TryAddWithoutValidation('Cookie', (($cookies.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join '; ')) | Out-Null
@@ -126,6 +132,9 @@ function Invoke-Http([string]$Metodo, [string]$Url, [hashtable]$Formulario = $nu
         $pares = New-Object 'System.Collections.Generic.List[System.Collections.Generic.KeyValuePair[string,string]]'
         foreach ($k in $Formulario.Keys) { $pares.Add((New-Object 'System.Collections.Generic.KeyValuePair[string,string]' ($k, "$($Formulario[$k])"))) }
         $peticion.Content = New-Object System.Net.Http.FormUrlEncodedContent -ArgumentList (,$pares)
+    }
+    if ($Json) {
+        $peticion.Content = New-Object System.Net.Http.StringContent($Json, [Text.Encoding]::UTF8, 'application/json')
     }
     $respuesta = $cliente.SendAsync($peticion).GetAwaiter().GetResult()
     $valores = $null
@@ -284,7 +293,70 @@ try {
 $rutaNegocio = "$ApiUrl/api/v1/propietarios"
 $r = Invoke-Http 'GET' $rutaNegocio
 Add-Resultado '5. Ruta de negocio sin token' ($(if ($r.Codigo -eq 401) { 'OK' } else { 'FALLA' })) "HTTP $($r.Codigo) $($r.Cuerpo)"
-Add-Resultado '5. Con token de tenant: 200 / rol ajeno: 403' 'PENDIENTE' 'necesita un endpoint de negocio y el contexto de tenant (#220)'
+
+# 5b. Con el token de tenant: registrar (o reutilizar) un propietario y leer su ficha.
+# El teléfono es fijo para que repetir el script no cree otra ficha.
+$telefonoH1b = '555 000 0159'
+try {
+    if (-not $tenant) { throw 'no hay token de tenant (falló el paso 4)' }
+    $esquema = Invoke-Psql "SELECT c.esquema || '|' || coalesce(m.estado, 'sin registrar') FROM catalogo.clinica c LEFT JOIN catalogo.migracion_tenant m ON m.esquema = c.esquema WHERE c.id = $clinicaId;"
+    $esquema, $migracion = "$esquema".Split('|')
+    if ($esquema -notmatch '^clinica_\d{3,}$') { throw "esquema inesperado: $esquema" }
+    if ($migracion -ne 'aplicada') {
+        throw "el esquema $esquema está «$migracion»: corre .\scripts\sembrar-demo.ps1 para migrarlo"
+    }
+    $propietarioId = Invoke-Psql "SELECT id FROM $esquema.propietario WHERE telefono_normalizado = regexp_replace('$telefonoH1b', '\D', '', 'g') ORDER BY id LIMIT 1;"
+    $alta = 'reutilizado'
+    if (-not $propietarioId) {
+        $cuerpo = @{ nombre = 'Propietario H1b'; telefono = $telefonoH1b } | ConvertTo-Json -Compress
+        $r = Invoke-Http 'POST' $rutaNegocio $null $tenant $cuerpo
+        if ($r.Codigo -ne 201) { throw "POST HTTP $($r.Codigo): $($r.Cuerpo)" }
+        $propietarioId = ($r.Cuerpo | ConvertFrom-Json).data.id
+        $alta = 'POST 201'
+    }
+    $r = Invoke-Http 'GET' "$rutaNegocio/$propietarioId" $null $tenant
+    $ficha = if ($r.Codigo -eq 200) { ($r.Cuerpo | ConvertFrom-Json).data } else { $null }
+    $ok = ($r.Codigo -eq 200) -and ("$($ficha.id)" -eq "$propietarioId")
+    Add-Resultado '5. Con token de tenant (clinica_admin)' ($(if ($ok) { 'OK' } else { 'FALLA' })) `
+        "$alta; GET /propietarios/$propietarioId HTTP $($r.Codigo) «$($ficha.nombre)» en $esquema"
+} catch {
+    Add-Resultado '5. Con token de tenant (clinica_admin)' 'FALLA' $_.Exception.Message
+}
+
+# 5c. Rol ajeno: el mismo usuario es `cliente` en otra clínica. Con ese token de
+# tenant, registrar un propietario es 403 (Matriz_roles.md: `C —`). La segunda
+# clínica no necesita esquema: el permiso se niega antes de tocar datos.
+try {
+    $nombreCliente = "$NombreClinica cliente".Replace("'", "''")
+    $clinicaCliente = Invoke-Psql @"
+WITH nueva AS (
+    INSERT INTO catalogo.clinica (nombre, zona_horaria)
+    SELECT '$nombreCliente', 'America/Mexico_City'
+    WHERE NOT EXISTS (SELECT 1 FROM catalogo.clinica WHERE nombre = '$nombreCliente')
+    RETURNING id
+)
+SELECT coalesce((SELECT id FROM nueva), (SELECT min(id) FROM catalogo.clinica WHERE nombre = '$nombreCliente'));
+"@
+    Invoke-Psql @"
+INSERT INTO catalogo.usuario_clinica (keycloak_id, clinica_id, rol)
+VALUES ('$sub', $clinicaCliente, 'cliente')
+ON CONFLICT (keycloak_id, clinica_id, rol) DO UPDATE SET estado = 'ACTIVO';
+SELECT 'ok';
+"@ | Out-Null
+    $r = Invoke-Http 'POST' "$ApiUrl/api/v1/sesion/clinicas/$clinicaCliente" $null $identidad
+    if ($r.Codigo -ne 200) { throw "token de cliente: HTTP $($r.Codigo): $($r.Cuerpo)" }
+    $tokenCliente = ($r.Cuerpo | ConvertFrom-Json).data.token
+    $roles = (@((Read-Jwt $tokenCliente).roles)) -join ','
+    $cuerpo = @{ nombre = 'No debe guardarse'; telefono = '555 000 0403' } | ConvertTo-Json -Compress
+    $r = Invoke-Http 'POST' $rutaNegocio $null $tokenCliente $cuerpo
+    $sobre = try { $r.Cuerpo | ConvertFrom-Json } catch { $null }
+    $ok = ($r.Codigo -eq 403) -and ($roles -eq 'cliente') -and ($null -ne $sobre) -and ($sobre.success -eq $false)
+    Add-Resultado '5. Rol ajeno (cliente) registra propietario' ($(if ($ok) { 'OK' } else { 'FALLA' })) `
+        "clínica $clinicaCliente roles=$roles; HTTP $($r.Codigo) $($r.Cuerpo)"
+} catch {
+    Add-Resultado '5. Rol ajeno (cliente) registra propietario' 'FALLA' $_.Exception.Message
+}
+
 $r = Invoke-Http 'GET' $rutaNegocio $null $identidad
 Add-Resultado '6. Token de identidad en ruta de negocio' ($(if ($r.Codigo -eq 401) { 'OK' } else { 'FALLA' })) "HTTP $($r.Codigo) $($r.Cuerpo)"
 
