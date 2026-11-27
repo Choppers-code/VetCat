@@ -1,10 +1,12 @@
 package com.vetcat.propietarios.service;
 
+import com.vetcat.mascotas.dto.MascotaResponse;
 import com.vetcat.mascotas.service.MascotaFachada;
 import com.vetcat.propietarios.dto.PropietarioRequest;
 import com.vetcat.propietarios.dto.PropietarioResponse;
 import com.vetcat.propietarios.entity.Propietario;
 import com.vetcat.propietarios.repository.PropietarioRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,13 +63,17 @@ public class PropietarioService {
   }
 
   private PropietarioResponse aFicha(Propietario propietario) {
+    return aFicha(propietario, mascotas.activasDe(propietario.getId()));
+  }
+
+  static PropietarioResponse aFicha(Propietario propietario, List<MascotaResponse> activas) {
     return new PropietarioResponse(
         propietario.getId(),
         propietario.getNombre(),
         propietario.getTelefono(),
         propietario.getCorreo(),
         propietario.isActivo(),
-        mascotas.activasDe(propietario.getId()));
+        activas);
   }
 
   private static void rechazarDireccion(PropietarioRequest datos) {
