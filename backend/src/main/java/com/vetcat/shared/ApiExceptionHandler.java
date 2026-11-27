@@ -7,6 +7,7 @@ import com.vetcat.security.TokenTenantInvalidoException;
 import com.vetcat.sesion.SinAccesoALaClinicaException;
 import java.util.Comparator;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -70,5 +71,10 @@ public class ApiExceptionHandler {
   @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   public Sobre<Void> cuerpoIlegible(HttpMessageNotReadableException excepcion) {
     return Sobre.error("La entrada no es válida");
+  }
+
+  @ExceptionHandler(AgendaException.class)
+  public ResponseEntity<Sobre<Void>> agenda(AgendaException excepcion) {
+    return ResponseEntity.status(excepcion.getEstado()).body(Sobre.error(excepcion.getMessage()));
   }
 }

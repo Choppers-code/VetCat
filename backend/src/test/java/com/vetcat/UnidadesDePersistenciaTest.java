@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.vetcat.catalogo.entity.UsuarioClinica;
 import com.vetcat.catalogo.repository.ClinicaRepository;
 import com.vetcat.catalogo.repository.UsuarioClinicaRepository;
+import com.vetcat.citas.entity.Consultorio;
+import com.vetcat.citas.repository.ConsultorioRepository;
+import com.vetcat.citas.repository.HorarioConsultorioRepository;
 import com.vetcat.tenancy.TenantAusenteException;
 import com.vetcat.tenancy.TenantContext;
 import jakarta.persistence.EntityManager;
@@ -36,7 +39,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers
 @SpringBootTest(
     properties = {
-      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba",
+      "vetcat.tenant.paquetes=com.vetcat.tenancy.prueba,com.vetcat.citas.entity",
       "vetcat.token.clave=clave-de-prueba-con-mas-de-32-bytes-para-hmac"
     })
 class UnidadesDePersistenciaTest {
@@ -75,12 +78,25 @@ class UnidadesDePersistenciaTest {
         s.execute("CREATE SCHEMA " + esquema);
         s.execute("CREATE TABLE " + esquema + ".mascota (id bigint PRIMARY KEY, nombre text)");
         s.execute("INSERT INTO " + esquema + ".mascota VALUES (1, 'clinica" + clinica + "-a')");
+        s.execute(
+            "CREATE TABLE "
+                + esquema
+                + ".consultorio (id bigint PRIMARY KEY, nombre varchar(100) NOT NULL, "
+                + "activo boolean NOT NULL, creado_en timestamptz, actualizado_en timestamptz)");
+        s.execute(
+            "INSERT INTO "
+                + esquema
+                + ".consultorio (id, nombre, activo) VALUES (1, 'consultorio-"
+                + clinica
+                + "', true)");
       }
     }
   }
 
   @Autowired ClinicaRepository clinicas;
   @Autowired UsuarioClinicaRepository membresias;
+  @Autowired ConsultorioRepository consultorios;
+  @Autowired HorarioConsultorioRepository horarios;
   @Autowired DataSource dataSource;
 
   @Autowired
@@ -97,6 +113,32 @@ class UnidadesDePersistenciaTest {
 
   @PersistenceContext(unitName = "tenant")
   EntityManager tenantEm;
+
+  @Test
+  void repositorios_tenant_se_inyectan_sin_tenant_activo() {
+    assertThat(TenantContext.actual()).isEmpty();
+    assertThat(consultorios).isNotNull();
+    assertThat(horarios).isNotNull();
+  }
+
+  @Test
+  void repositorio_tenant_falla_sin_tenant_sin_devolver_datos() {
+    for (long clinica : new long[] {1, 2}) {
+      assertThat(
+              TenantContext.ejecutar(
+                  clinica,
+                  () ->
+                      consultorios.findAllByOrderById().stream()
+                          .map(Consultorio::getNombre)
+                          .toList()))
+          .containsExactly("consultorio-" + clinica);
+    }
+
+    assertThat(TenantContext.actual()).isEmpty();
+    assertThatThrownBy(() -> consultorios.findAllByOrderById())
+        .hasRootCauseInstanceOf(TenantAusenteException.class);
+    assertThat(TenantContext.actual()).isEmpty();
+  }
 
   private List<String> mascotasDeLaClinicaActiva() {
     return new TransactionTemplate(tenantTx)

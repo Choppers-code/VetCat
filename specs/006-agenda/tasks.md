@@ -14,10 +14,10 @@ Regla: primero la base y la concurrencia; después la lógica. Cada tarea cabe e
 
 ## Fase 1 — Consultorios y horarios (#191)
 
-- [ ] **T006** Alta, edición y baja lógica de consultorio.
-- [ ] **T007** Horarios por día y excepción por fecha, en la zona de la clínica.
-- [ ] **T008** `[P]` Prueba: dos horarios solapados se rechazan; una excepción manda sobre el semanal.
-- [ ] **T009** `@PreAuthorize` de configuración y lectura.
+- [X] **T006** Alta, edición y baja lógica de consultorio.
+- [X] **T007** Horarios por día y excepción por fecha, en la zona de la clínica.
+- [X] **T008** `[P]` Prueba: dos horarios solapados se rechazan; una excepción manda sobre el semanal.
+- [X] **T009** `@PreAuthorize` de configuración y lectura.
 
 ## Fase 2 — Bloqueos (#193)
 
