@@ -212,6 +212,68 @@ SELECT 'ok';
     }
 }
 
+# --- 4. Propietarios y mascotas de la demo -----------------------------------------
+# La ficha de #167 ya lee mascota de tenant/V1: con estos datos los pasos 4, 6 y 7
+# tienen algo que enseñar aunque #169 no haya entrado.
+$semilla = @(
+    @{ Clinica = 'Veterinaria Norte'; Nombre = 'Ana Torres'; Telefono = '555 111 0001'; Correo = 'ana@demo.vetcat.dev'
+       Mascotas = @(
+           @{ Nombre = 'Luna'; Especie = 'GATO'; Raza = 'Mestiza'; Sexo = 'HEMBRA'; Nacimiento = '2021-03-15'; Peso = '4.20' },
+           @{ Nombre = 'Rocky'; Especie = 'PERRO'; Raza = 'Labrador'; Sexo = 'MACHO'; Nacimiento = '2019-11-02'; Peso = '28.50' }
+       ) },
+    @{ Clinica = 'Veterinaria Norte'; Nombre = 'Beto Ruiz'; Telefono = '555 111 0002'; Correo = 'beto@demo.vetcat.dev'
+       Mascotas = @(
+           @{ Nombre = 'Michi'; Especie = 'GATO'; Raza = 'Siames'; Sexo = 'MACHO'; Nacimiento = '2022-07-20'; Peso = '3.80' }
+       ) },
+    @{ Clinica = 'Veterinaria Sur'; Nombre = 'Carla Mendez'; Telefono = '555 222 0001'; Correo = 'carla@demo.vetcat.dev'
+       Mascotas = @(
+           @{ Nombre = 'Nube'; Especie = 'PERRO'; Raza = 'Mestiza'; Sexo = 'HEMBRA'; Nacimiento = '2020-01-10'; Peso = '12.40' }
+       ) }
+)
+
+foreach ($p in $semilla) {
+    try {
+        $esquema = (Invoke-Psql "SELECT esquema FROM catalogo.clinica WHERE id = $($idDe[$p.Clinica]);" | Select-Object -Last 1)
+        if ($esquema -notmatch '^clinica_\d{3,}$') { throw "esquema inesperado: $esquema" }
+        $nombre = $p.Nombre.Replace("'", "''")
+        $telefono = $p.Telefono.Replace("'", "''")
+        $correo = $p.Correo.Replace("'", "''")
+        $propietarioId = Invoke-Psql @"
+WITH nuevo AS (
+    INSERT INTO $esquema.propietario (nombre, telefono, correo)
+    SELECT '$nombre', '$telefono', '$correo'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM $esquema.propietario
+        WHERE telefono_normalizado = regexp_replace('$telefono', '\D', '', 'g')
+    )
+    RETURNING id
+)
+SELECT coalesce(
+    (SELECT id FROM nuevo),
+    (SELECT id FROM $esquema.propietario
+     WHERE telefono_normalizado = regexp_replace('$telefono', '\D', '', 'g') LIMIT 1)
+);
+"@ | Select-Object -Last 1
+        if (-not $propietarioId) { throw "no se pudo crear $($p.Nombre)" }
+        foreach ($m in $p.Mascotas) {
+            $mascota = $m.Nombre.Replace("'", "''")
+            $raza = $m.Raza.Replace("'", "''")
+            Invoke-Psql @"
+INSERT INTO $esquema.mascota (propietario_id, nombre, especie, raza, sexo, fecha_nacimiento, peso_kg)
+SELECT $propietarioId, '$mascota', '$($m.Especie)', '$raza', '$($m.Sexo)', DATE '$($m.Nacimiento)', $($m.Peso)
+WHERE NOT EXISTS (
+    SELECT 1 FROM $esquema.mascota
+    WHERE propietario_id = $propietarioId AND nombre = '$mascota'
+);
+"@ | Out-Null
+        }
+        Add-Resultado "4. $($p.Nombre)" 'OK' ("$($p.Mascotas.Count) mascota(s) en $($p.Clinica)")
+    } catch {
+        Add-Resultado "4. $($p.Nombre)" 'FALLA' $_.Exception.Message
+    }
+}
+
 Write-Host ''
 Write-Host "Contraseña de los tres usuarios: $Contrasena" -ForegroundColor Cyan
+Write-Host "Propietarios de demo: 2 en Norte y 1 en Sur, con mascotas." -ForegroundColor Cyan
 Show-Resumen
