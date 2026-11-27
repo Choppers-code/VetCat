@@ -22,8 +22,9 @@ migrate_working_dir/
 #.vscode/
 
 # Flutter/Dart/Pub related
-# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
-/pubspec.lock
+# core no se publica (`publish_to: none`) y genera código con freezed y
+# json_serializable: su pubspec.lock se commitea para que CI regenere con las
+# mismas versiones que quien desarrolla (#247).
 **/doc/api/
 .dart_tool/
 .flutter-plugins-dependencies

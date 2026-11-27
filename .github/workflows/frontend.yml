@@ -48,6 +48,29 @@ jobs:
         if: steps.toca.outputs.hay == 'true'
         run: flutter --version
 
+      # Los generados de freezed y json_serializable se commitean (#237). Este paso
+      # los regenera y falla si el árbol cambia: un modelo modificado sin
+      # regenerar o un `.g.dart` editado a mano. No genera nada para compilar: el
+      # APK y la web siguen usando lo commiteado. Las versiones de los
+      # generadores salen del `pubspec.lock` de core, para que un PR limpio no se
+      # ponga rojo cuando salga una versión nueva de freezed (#247).
+      - name: Comprobar que los generados están al día
+        if: steps.toca.outputs.hay == 'true'
+        run: |
+          set -euo pipefail
+          cd frontend/packages/core
+          flutter pub get --enforce-lockfile
+          dart run build_runner build
+          cambios=$(git status --porcelain --untracked-files=all -- .)
+          if [ -n "$cambios" ]; then
+            echo "::error::Los archivos generados no están al día con los modelos."
+            echo "$cambios"
+            git --no-pager diff --stat -- .
+            echo "Regenera y commitea: cd frontend/packages/core && dart run build_runner build"
+            exit 1
+          fi
+          echo "Generados al día."
+
       # El orden importa: core y ui son dependencias por ruta de las apps.
       - name: Analizar y probar los cuatro proyectos
         if: steps.toca.outputs.hay == 'true'
