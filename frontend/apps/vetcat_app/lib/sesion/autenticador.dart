@@ -75,13 +75,27 @@ class AutenticadorAppAuth implements Autenticador {
 
   @override
   Future<void> cerrar(String? idToken) async {
+    final emisor = _emisorValido;
     await _appAuth.endSession(
       EndSessionRequest(
         idTokenHint: idToken,
         postLogoutRedirectUrl: _redireccion,
-        issuer: _emisorValido,
+        issuer: _inseguro ? null : emisor,
+        serviceConfiguration: _inseguro ? _rutasDeKeycloak(emisor) : null,
         allowInsecureConnections: _inseguro,
       ),
+    );
+  }
+
+  /// Solo para http: flutter_appauth 13.0.0 ignora `allowInsecureConnections`
+  /// al descubrir la configuración en `endSession` y la app se cierra (#253).
+  /// Con las rutas dadas no hay descubrimiento.
+  AuthorizationServiceConfiguration _rutasDeKeycloak(String emisor) {
+    final base = '$emisor/protocol/openid-connect';
+    return AuthorizationServiceConfiguration(
+      authorizationEndpoint: '$base/auth',
+      tokenEndpoint: '$base/token',
+      endSessionEndpoint: '$base/logout',
     );
   }
 
