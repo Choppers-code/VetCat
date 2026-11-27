@@ -8,10 +8,13 @@ import com.vetcat.catalogo.entity.UsuarioClinica;
 import com.vetcat.catalogo.repository.ClinicaRepository;
 import com.vetcat.catalogo.repository.UsuarioClinicaRepository;
 import com.vetcat.configuracion.dto.MiembroResponse;
+import com.vetcat.configuracion.service.AutoasignacionDeRolesException;
+import com.vetcat.configuracion.service.MiembroExistenteException;
 import com.vetcat.configuracion.service.MiembroNoEncontradoException;
 import com.vetcat.configuracion.service.PersonalClinicaService;
 import com.vetcat.configuracion.service.PersonalInvalidoException;
 import com.vetcat.configuracion.service.UltimoAdministradorException;
+import com.vetcat.sesion.SinAccesoALaClinicaException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -80,13 +83,16 @@ class PersonalClinicaTest {
 
   private static final Set<String> ADMIN = Set.of("clinica_admin");
 
+  /** Quien hace el cambio cuando no es la propia persona afectada. */
+  private static final UUID ACTOR = UUID.randomUUID();
+
   @Test
   void un_usuario_con_varios_roles_conserva_la_union() {
     long clinica = nuevaClinica();
     UUID ana = UUID.randomUUID();
 
     MiembroResponse miembro =
-        personal.agregar(clinica, ana, Set.of("clinica_admin", "veterinario"));
+        personal.agregar(clinica, ACTOR, ana, Set.of("clinica_admin", "veterinario"));
 
     assertThat(miembro.roles()).containsExactly("clinica_admin", "veterinario");
     assertThat(membresias.findByKeycloakIdAndClinicaIdAndEstado(ana, clinica, "ACTIVO"))
@@ -98,11 +104,12 @@ class PersonalClinicaTest {
   void rechaza_roles_que_el_administrador_no_puede_asignar() {
     long clinica = nuevaClinica();
 
-    assertThatThrownBy(() -> personal.agregar(clinica, UUID.randomUUID(), Set.of("super_admin")))
+    assertThatThrownBy(
+            () -> personal.agregar(clinica, ACTOR, UUID.randomUUID(), Set.of("super_admin")))
         .isInstanceOf(PersonalInvalidoException.class);
-    assertThatThrownBy(() -> personal.agregar(clinica, UUID.randomUUID(), Set.of("cliente")))
+    assertThatThrownBy(() -> personal.agregar(clinica, ACTOR, UUID.randomUUID(), Set.of("cliente")))
         .isInstanceOf(PersonalInvalidoException.class);
-    assertThatThrownBy(() -> personal.agregar(clinica, UUID.randomUUID(), Set.of()))
+    assertThatThrownBy(() -> personal.agregar(clinica, ACTOR, UUID.randomUUID(), Set.of()))
         .isInstanceOf(PersonalInvalidoException.class);
   }
 
@@ -111,10 +118,10 @@ class PersonalClinicaTest {
     long a = nuevaClinica();
     long b = nuevaClinica();
     UUID enB = UUID.randomUUID();
-    personal.agregar(b, enB, Set.of("veterinario"));
+    personal.agregar(b, ACTOR, enB, Set.of("veterinario"));
 
     assertThat(personal.listar(a)).isEmpty();
-    assertThatThrownBy(() -> personal.cambiarRoles(a, enB, Set.of("recepcionista")))
+    assertThatThrownBy(() -> personal.cambiarRoles(a, ACTOR, enB, Set.of("recepcionista")))
         .isInstanceOf(MiembroNoEncontradoException.class);
     assertThatThrownBy(() -> personal.desactivar(a, enB))
         .isInstanceOf(MiembroNoEncontradoException.class);
@@ -128,9 +135,9 @@ class PersonalClinicaTest {
   void no_deja_a_la_clinica_sin_su_ultimo_administrador() {
     long clinica = nuevaClinica();
     UUID unico = UUID.randomUUID();
-    personal.agregar(clinica, unico, Set.of("clinica_admin"));
+    personal.agregar(clinica, ACTOR, unico, Set.of("clinica_admin"));
 
-    assertThatThrownBy(() -> personal.cambiarRoles(clinica, unico, Set.of("veterinario")))
+    assertThatThrownBy(() -> personal.cambiarRoles(clinica, ACTOR, unico, Set.of("veterinario")))
         .isInstanceOf(UltimoAdministradorException.class);
     assertThatThrownBy(() -> personal.desactivar(clinica, unico))
         .isInstanceOf(UltimoAdministradorException.class);
@@ -144,10 +151,10 @@ class PersonalClinicaTest {
   void con_otro_administrador_activo_si_puede_quitarse_el_rol() {
     long clinica = nuevaClinica();
     UUID uno = UUID.randomUUID();
-    personal.agregar(clinica, uno, ADMIN);
-    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    personal.agregar(clinica, ACTOR, uno, Set.of("clinica_admin", "veterinario"));
+    personal.agregar(clinica, ACTOR, UUID.randomUUID(), ADMIN);
 
-    MiembroResponse cambiado = personal.cambiarRoles(clinica, uno, Set.of("veterinario"));
+    MiembroResponse cambiado = personal.cambiarRoles(clinica, uno, uno, Set.of("veterinario"));
 
     assertThat(cambiado.roles()).containsExactly("veterinario");
   }
@@ -155,9 +162,9 @@ class PersonalClinicaTest {
   @Test
   void desactivar_conserva_al_miembro_y_le_impide_abrir_sesion() {
     long clinica = nuevaClinica();
-    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    personal.agregar(clinica, ACTOR, UUID.randomUUID(), ADMIN);
     UUID vet = UUID.randomUUID();
-    personal.agregar(clinica, vet, Set.of("veterinario", "recepcionista"));
+    personal.agregar(clinica, ACTOR, vet, Set.of("veterinario", "recepcionista"));
 
     MiembroResponse inactivo = personal.desactivar(clinica, vet);
 
@@ -172,24 +179,89 @@ class PersonalClinicaTest {
   @Test
   void cambiar_los_roles_de_un_desactivado_no_lo_reactiva() {
     long clinica = nuevaClinica();
-    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    personal.agregar(clinica, ACTOR, UUID.randomUUID(), ADMIN);
     UUID vet = UUID.randomUUID();
-    personal.agregar(clinica, vet, Set.of("veterinario"));
+    personal.agregar(clinica, ACTOR, vet, Set.of("veterinario"));
     personal.desactivar(clinica, vet);
 
-    MiembroResponse cambiado = personal.cambiarRoles(clinica, vet, Set.of("recepcionista"));
+    MiembroResponse cambiado = personal.cambiarRoles(clinica, ACTOR, vet, Set.of("recepcionista"));
 
     assertThat(cambiado.estado()).isEqualTo("INACTIVO");
     assertThat(membresias.findByKeycloakIdAndClinicaIdAndEstado(vet, clinica, "ACTIVO")).isEmpty();
   }
 
   @Test
+  void un_administrador_no_puede_anadirse_roles_a_si_mismo() {
+    long clinica = nuevaClinica();
+    UUID admin = UUID.randomUUID();
+    personal.agregar(clinica, ACTOR, admin, ADMIN);
+    Set<String> conVeterinario = Set.of("clinica_admin", "veterinario");
+
+    assertThatThrownBy(() -> personal.cambiarRoles(clinica, admin, admin, conVeterinario))
+        .isInstanceOf(AutoasignacionDeRolesException.class);
+    assertThatThrownBy(() -> personal.agregar(clinica, admin, admin, conVeterinario))
+        .isInstanceOf(AutoasignacionDeRolesException.class);
+
+    assertThat(personal.listar(clinica))
+        .singleElement()
+        .satisfies(m -> assertThat(m.roles()).containsExactly("clinica_admin"));
+  }
+
+  @Test
+  void un_administrador_si_puede_dar_veterinario_a_otra_persona() {
+    long clinica = nuevaClinica();
+    UUID admin = UUID.randomUUID();
+    personal.agregar(clinica, ACTOR, admin, ADMIN);
+    UUID otra = UUID.randomUUID();
+
+    personal.agregar(clinica, admin, otra, Set.of("recepcionista"));
+    MiembroResponse cambiada = personal.cambiarRoles(clinica, admin, otra, Set.of("veterinario"));
+
+    assertThat(cambiada.roles()).containsExactly("veterinario");
+  }
+
+  @Test
+  void un_rol_desactivado_no_cuenta_para_anadirselo_a_si_mismo() {
+    long clinica = nuevaClinica();
+    UUID persona = UUID.randomUUID();
+    personal.agregar(clinica, ACTOR, UUID.randomUUID(), ADMIN);
+    personal.agregar(clinica, ACTOR, persona, Set.of("veterinario"));
+    personal.desactivar(clinica, persona);
+
+    assertThatThrownBy(
+            () -> personal.cambiarRoles(clinica, persona, persona, Set.of("veterinario")))
+        .isInstanceOf(AutoasignacionDeRolesException.class);
+  }
+
+  @Test
+  void agregar_a_quien_ya_es_del_personal_da_conflicto_y_no_cambia_sus_roles() {
+    long clinica = nuevaClinica();
+    UUID vet = UUID.randomUUID();
+    personal.agregar(clinica, ACTOR, vet, Set.of("veterinario"));
+
+    assertThatThrownBy(() -> personal.agregar(clinica, ACTOR, vet, Set.of("recepcionista")))
+        .isInstanceOf(MiembroExistenteException.class);
+
+    assertThat(personal.listar(clinica))
+        .singleElement()
+        .satisfies(m -> assertThat(m.roles()).containsExactly("veterinario"));
+  }
+
+  @Test
+  void una_clinica_que_no_existe_se_rechaza_como_falta_de_acceso() {
+    assertThatThrownBy(
+            () -> personal.agregar(999_999L, ACTOR, UUID.randomUUID(), Set.of("veterinario")))
+        .isInstanceOf(SinAccesoALaClinicaException.class)
+        .hasMessage("No tienes acceso a esta clínica");
+  }
+
+  @Test
   void no_toca_la_fila_cliente_de_la_misma_persona() {
     long clinica = nuevaClinica();
-    personal.agregar(clinica, UUID.randomUUID(), ADMIN);
+    personal.agregar(clinica, ACTOR, UUID.randomUUID(), ADMIN);
     UUID persona = UUID.randomUUID();
     membresias.save(new UsuarioClinica(persona, clinica, "cliente"));
-    personal.agregar(clinica, persona, Set.of("veterinario"));
+    personal.agregar(clinica, ACTOR, persona, Set.of("veterinario"));
 
     personal.desactivar(clinica, persona);
 
@@ -204,8 +276,8 @@ class PersonalClinicaTest {
     long clinica = nuevaClinica();
     UUID uno = UUID.randomUUID();
     UUID dos = UUID.randomUUID();
-    personal.agregar(clinica, uno, ADMIN);
-    personal.agregar(clinica, dos, ADMIN);
+    personal.agregar(clinica, ACTOR, uno, Set.of("clinica_admin", "veterinario"));
+    personal.agregar(clinica, ACTOR, dos, Set.of("clinica_admin", "veterinario"));
     CountDownLatch salida = new CountDownLatch(1);
     ExecutorService ejecutor = Executors.newFixedThreadPool(2);
     List<Future<Boolean>> tareas =
@@ -216,7 +288,7 @@ class PersonalClinicaTest {
                         () -> {
                           salida.await();
                           try {
-                            personal.cambiarRoles(clinica, id, Set.of("veterinario"));
+                            personal.cambiarRoles(clinica, id, id, Set.of("veterinario"));
                             return true;
                           } catch (UltimoAdministradorException e) {
                             return false;
