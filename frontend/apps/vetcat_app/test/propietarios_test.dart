@@ -120,6 +120,28 @@ void main() {
     });
   });
 
+  group('aislamiento', () {
+    testWidgets('otra clínica no conserva la búsqueda ni sus resultados', (
+      tester,
+    ) async {
+      repo.resultados = [ResultadoDeBusqueda(propietario: ana())];
+      e.repositorio.lista = [clinica(1), clinica(2)];
+      await e.entrar(tester);
+      await tester.tap(find.text('Clínica 1'));
+      await tester.pumpAndSettle();
+      await buscar(tester, 'ana');
+      expect(find.text('Ana Pérez'), findsOneWidget);
+
+      await tocarMenu(tester, 'Cambiar de clínica');
+      await tester.tap(find.text('Clínica 2'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ana Pérez'), findsNothing);
+      expect(find.widgetWithText(TextField, 'ana'), findsNothing);
+      expect(repo.consultas, ['ana']);
+    });
+  });
+
   group('ficha', () {
     testWidgets('muestra datos y mascotas activas', (tester) async {
       await abrirFicha(tester);
@@ -128,6 +150,16 @@ void main() {
       expect(find.text('Correo: ana@correo.mx'), findsOneWidget);
       expect(find.text('Siamés'), findsNothing);
       expect(find.text('Gato · Siamés'), findsOneWidget);
+    });
+
+    testWidgets('atrás conserva la búsqueda y sus resultados', (tester) async {
+      await abrirFicha(tester);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, 'luna'), findsOneWidget);
+      expect(find.text('Ana Pérez'), findsOneWidget);
     });
 
     testWidgets('atrás vuelve a la lista sin cerrar la clínica', (

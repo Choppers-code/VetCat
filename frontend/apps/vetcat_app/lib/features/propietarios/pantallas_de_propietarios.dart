@@ -16,6 +16,8 @@ class ModuloDePropietarios extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paso = ref.watch(pasoProvider);
+    // La consulta vive mientras viva el módulo: volver de la ficha no la borra.
+    ref.watch(consultaProvider);
     return PopScope(
       canPop: paso is PasoLista,
       onPopInvokedWithResult: (volvio, _) {
@@ -40,13 +42,14 @@ class _Lista extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: TextField(
+            child: TextFormField(
+              initialValue: ref.read(consultaProvider),
               decoration: const InputDecoration(
                 labelText: 'Buscar propietario o mascota',
                 prefixIcon: Icon(Icons.search),
               ),
               textInputAction: TextInputAction.search,
-              onSubmitted: ref.read(consultaProvider.notifier).buscar,
+              onFieldSubmitted: ref.read(consultaProvider.notifier).buscar,
             ),
           ),
           Expanded(
