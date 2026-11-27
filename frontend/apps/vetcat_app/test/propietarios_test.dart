@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vetcat_app/features/propietarios/formulario_de_propietario.dart';
 import 'package:vetcat_app/features/propietarios/repositorio_de_propietarios.dart';
 import 'package:vetcat_core/vetcat_core.dart';
 
@@ -237,12 +236,12 @@ void main() {
     });
 
     testWidgets('teléfono repetido: pide confirmar y reenvía', (tester) async {
-      repo.alRegistrar = errorDeApi(409, 'duplicado');
+      repo.alRegistrar = errorDeApi(409, 'Ese teléfono ya está registrado');
       await llenar(tester);
 
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
-      expect(find.text(mensajeDeDuplicado), findsOneWidget);
+      expect(find.text('Ese teléfono ya está registrado'), findsOneWidget);
       await tester.tap(find.text('Registrar de todos modos'));
       await tester.pumpAndSettle();
 
@@ -263,19 +262,35 @@ void main() {
       expect(find.text('Nuevo propietario'), findsOneWidget);
     });
 
-    testWidgets('un 422 muestra texto fijo, no el del backend', (tester) async {
-      repo.alRegistrar = errorDeApi(422, 'direccion no permitida por el plan');
+    testWidgets('un 422 muestra el mensaje del backend', (tester) async {
+      repo.alRegistrar = errorDeApi(422, 'El correo no es válido');
       await llenar(tester);
 
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('direccion'), findsNothing);
-      expect(
-        find.text(ErrorDeApi.mensajePorTipo(TipoDeError.entradaInvalida)),
-        findsOneWidget,
-      );
+      expect(find.text('El correo no es válido'), findsOneWidget);
     });
+
+    for (final estado in [401, 403, 500]) {
+      testWidgets('un $estado muestra texto fijo, no el del backend', (
+        tester,
+      ) async {
+        repo.alRegistrar = errorDeApi(estado, 'detalle interno');
+        await llenar(tester);
+
+        await tester.tap(find.text('Guardar'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('detalle interno'), findsNothing);
+        expect(
+          find.text(
+            ErrorDeApi.mensajePorTipo(ErrorDeApi.tipoPorEstado(estado)),
+          ),
+          findsOneWidget,
+        );
+      });
+    }
 
     testWidgets('sin visitas a domicilio no hay dirección ni se manda', (
       tester,
@@ -322,14 +337,14 @@ void main() {
     });
 
     testWidgets('un 409 al editar pide confirmar y reenvía', (tester) async {
-      repo.alEditar = errorDeApi(409, 'conflicto');
+      repo.alEditar = errorDeApi(409, 'Ese teléfono ya está registrado');
       await abrirFicha(tester);
       await tester.tap(find.text('Editar'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
-      expect(find.text(mensajeDeDuplicadoAlEditar), findsOneWidget);
+      expect(find.text('Ese teléfono ya está registrado'), findsOneWidget);
 
       await tester.tap(find.text('Guardar de todos modos'));
       await tester.pumpAndSettle();

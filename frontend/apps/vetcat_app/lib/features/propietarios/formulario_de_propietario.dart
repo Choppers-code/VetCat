@@ -6,10 +6,16 @@ import 'estado_de_propietarios.dart';
 import 'pantallas_de_propietarios.dart';
 import 'repositorio_de_propietarios.dart';
 
-const mensajeDeDuplicado =
-    'Ya existe un propietario con ese teléfono. ¿Registrarlo de todos modos?';
-const mensajeDeDuplicadoAlEditar =
-    'Otro propietario ya tiene ese teléfono. ¿Guardar de todos modos?';
+/// En 409 y 422 el mensaje del sobre es del dominio y se muestra (#174); el
+/// resto lleva el texto fijo de su tipo.
+String _textoDelFormulario(Object error) => switch (error) {
+  ErrorDeApi(
+    tipo: TipoDeError.conflicto || TipoDeError.entradaInvalida,
+    :final mensaje,
+  ) =>
+    mensaje,
+  _ => textoDeError(error),
+};
 
 /// Alta y edición. La dirección solo se ofrece si el plan incluye visitas a
 /// domicilio; el backend la rechaza igual si se fuerza.
@@ -84,14 +90,14 @@ class _Estado extends ConsumerState<FormularioDePropietario> {
       // no se vuelve a preguntar.
       if (e.tipo == TipoDeError.conflicto && !confirmarDuplicado) {
         setState(() => _guardando = false);
-        if (await _confirmarDuplicado() && mounted) {
+        if (await _confirmarDuplicado(e.mensaje) && mounted) {
           await _guardar(confirmarDuplicado: true);
         }
         return;
       }
       setState(() {
         _guardando = false;
-        _error = textoDeError(e);
+        _error = _textoDelFormulario(e);
       });
     } on Object catch (e) {
       if (!mounted) return;
@@ -102,12 +108,12 @@ class _Estado extends ConsumerState<FormularioDePropietario> {
     }
   }
 
-  Future<bool> _confirmarDuplicado() async {
+  Future<bool> _confirmarDuplicado(String mensaje) async {
     final alta = widget.propietario == null;
     final acepta = await showDialog<bool>(
       context: context,
       builder: (contexto) => AlertDialog(
-        content: Text(alta ? mensajeDeDuplicado : mensajeDeDuplicadoAlEditar),
+        content: Text(mensaje),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(contexto, false),
