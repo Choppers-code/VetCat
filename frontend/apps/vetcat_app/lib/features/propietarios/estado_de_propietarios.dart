@@ -20,6 +20,12 @@ class PasoFicha extends Paso {
   final int id;
 }
 
+/// [propietario] es `null` en el alta.
+class PasoFormulario extends Paso {
+  const PasoFormulario({this.propietario});
+  final PropietarioResponse? propietario;
+}
+
 final pasoProvider = NotifierProvider.autoDispose<PasoActual, Paso>(
   PasoActual.new,
 );
@@ -33,8 +39,14 @@ class PasoActual extends Notifier<Paso> {
 
   void ir(Paso paso) => state = paso;
 
-  /// Atrás: de la ficha a la lista.
-  void atras() => state = const PasoLista();
+  /// Atrás: del formulario a la ficha o la lista, de la ficha a la lista.
+  void atras() {
+    final actual = state;
+    state = switch (actual) {
+      PasoFormulario(:final propietario?) => PasoFicha(propietario.id),
+      _ => const PasoLista(),
+    };
+  }
 }
 
 final consultaProvider = NotifierProvider.autoDispose<Consulta, String>(

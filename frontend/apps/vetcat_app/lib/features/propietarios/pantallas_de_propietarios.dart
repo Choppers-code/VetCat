@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vetcat_core/vetcat_core.dart';
 
 import 'estado_de_propietarios.dart';
+import 'formulario_de_propietario.dart';
 
 /// Texto fijo por tipo de error: nunca el mensaje crudo del backend.
 String textoDeError(Object error) => ErrorDeApi.mensajePorTipo(
   error is ErrorDeApi ? error.tipo : TipoDeError.desconocido,
 );
 
-/// Búsqueda y ficha de propietarios (PRO-002, PRO-009). Va dentro del área de la clínica, que ya trae su barra.
+/// Lista con búsqueda, ficha y formulario de propietarios (PRO-001, PRO-002,
+/// PRO-009). Va dentro del área de la clínica, que ya trae su barra.
 class ModuloDePropietarios extends ConsumerWidget {
   const ModuloDePropietarios({super.key});
 
@@ -26,6 +28,9 @@ class ModuloDePropietarios extends ConsumerWidget {
       child: switch (paso) {
         PasoLista() => const _Lista(),
         PasoFicha(:final id) => _Ficha(id: id),
+        PasoFormulario(:final propietario) => FormularioDePropietario(
+          propietario: propietario,
+        ),
       },
     );
   }
@@ -38,6 +43,12 @@ class _Lista extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final resultados = ref.watch(resultadosProvider);
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () =>
+            ref.read(pasoProvider.notifier).ir(const PasoFormulario()),
+        icon: const Icon(Icons.add),
+        label: const Text('Nuevo propietario'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -131,6 +142,13 @@ class _Ficha extends ConsumerWidget {
                     subtitle: Text([m.especie.etiqueta, ?m.raza].join(' · ')),
                   ),
               ],
+            ),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () => ref
+                  .read(pasoProvider.notifier)
+                  .ir(PasoFormulario(propietario: p)),
+              icon: const Icon(Icons.edit),
+              label: const Text('Editar'),
             ),
           ),
         );
