@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -119,7 +120,9 @@ public class CitasService {
                   opcional(request.motivo()),
                   "PERSONAL"));
       return respuesta(cita);
-    } catch (DataIntegrityViolationException | PersistenceException excepcion) {
+    } catch (DataIntegrityViolationException
+        | PessimisticLockingFailureException
+        | PersistenceException excepcion) {
       if (contieneEmpalme(excepcion)) {
         throw error(HttpStatus.CONFLICT, "La franja ya está ocupada por otra cita");
       }
@@ -184,13 +187,19 @@ public class CitasService {
     }
   }
 
+  /**
+   * Empalme detectado por PostgreSQL: violación de una {@code EXCLUDE} (23P01) o interbloqueo
+   * (40P01). Dos reservas simultáneas que chocan en las dos restricciones (consultorio y
+   * veterinario) se esperan entre sí y PostgreSQL cancela una con 40P01; la otra se guarda, así que
+   * para la cancelada la franja sí está ocupada y responde 409, no 500 (#199).
+   */
   private static boolean contieneEmpalme(Throwable excepcion) {
     for (Throwable causa = excepcion; causa != null; causa = causa.getCause()) {
       if (causa instanceof SQLException sql) {
         for (SQLException siguiente = sql;
             siguiente != null;
             siguiente = siguiente.getNextException()) {
-          if ("23P01".equals(siguiente.getSQLState())) {
+          if ("23P01".equals(siguiente.getSQLState()) || "40P01".equals(siguiente.getSQLState())) {
             return true;
           }
         }

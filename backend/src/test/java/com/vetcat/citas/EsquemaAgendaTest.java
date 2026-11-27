@@ -783,6 +783,194 @@ class EsquemaAgendaTest {
     }
   }
 
+  /**
+   * AGE-003 (#199): varias reservas a la vez sobre la misma franja y consultorio. Exactamente una
+   * gana; las demás reciben 409. Seis hilos: cada petición usa una conexión de clínica y otra del
+   * catálogo, y el pool de prueba es de diez.
+   */
+  @Test
+  void seis_reservas_simultaneas_de_la_misma_franja_dejan_una_sola_cita() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String cuerpo =
+        solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0));
+
+    for (int ronda = 1; ronda <= RONDAS; ronda++) {
+      ejecuta("TRUNCATE " + esquema + ".cita RESTART IDENTITY");
+      List<Integer> estados = reservaEnParalelo(java.util.Collections.nCopies(6, cuerpo));
+
+      dejaConstancia("misma franja y consultorio, ronda " + ronda, estados);
+      assertThat(estados).as("ronda %d", ronda).filteredOn(estado -> estado == 201).hasSize(1);
+      assertThat(estados).as("ronda %d", ronda).filteredOn(estado -> estado == 409).hasSize(5);
+      assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+    }
+  }
+
+  /** Variante de #199: consultorios y veterinarios distintos a la misma hora; las dos ganan. */
+  @Test
+  void en_consultorios_y_veterinarios_distintos_las_dos_reservas_ganan() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    long otroConsultorio = consultorioConHorario("Consultorio 2", escenario.fecha());
+
+    List<Integer> estados =
+        reservaEnParalelo(
+            List.of(
+                solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0)),
+                solicitudCita(1, otroVeterinarioId, otroConsultorio, escenario.inicio(10, 0))));
+
+    dejaConstancia("consultorios y veterinarios distintos", estados);
+    assertThat(estados).containsExactly(201, 201);
+    assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("2");
+  }
+
+  /** El mismo veterinario no puede estar en dos consultorios a la vez, aunque lleguen juntas. */
+  @Test
+  void el_mismo_veterinario_en_dos_consultorios_a_la_vez_solo_gana_una() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    long otroConsultorio = consultorioConHorario("Consultorio 2", escenario.fecha());
+    List<String> cuerpos =
+        List.of(
+            solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0)),
+            solicitudCita(1, veterinarioId, otroConsultorio, escenario.inicio(10, 0)));
+
+    for (int ronda = 1; ronda <= RONDAS; ronda++) {
+      ejecuta("TRUNCATE " + esquema + ".cita RESTART IDENTITY");
+      List<Integer> estados = reservaEnParalelo(cuerpos);
+
+      dejaConstancia("mismo veterinario, dos consultorios, ronda " + ronda, estados);
+      assertThat(estados).as("ronda %d", ronda).containsExactlyInAnyOrder(201, 409);
+      assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+    }
+  }
+
+  /**
+   * Criterio de #199: sin las restricciones de exclusión, la prueba de concurrencia lo detecta. Se
+   * quitan las dos {@code EXCLUDE} del esquema, se repite la carrera y deben entrar varias citas;
+   * al terminar se restauran con su definición original.
+   */
+  @Test
+  void sin_las_exclusiones_la_carrera_deja_citas_duplicadas() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String cuerpo =
+        solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0));
+    List<String> nombres =
+        List.of("cita_sin_empalmes_consultorio", "cita_sin_empalmes_veterinario");
+    List<String> definiciones = new java.util.ArrayList<>();
+    for (String nombre : nombres) {
+      definiciones.add(
+          texto(
+              "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = '"
+                  + nombre
+                  + "' AND connamespace = '"
+                  + esquema
+                  + "'::regnamespace"));
+    }
+    try {
+      for (String nombre : nombres) {
+        ejecuta("ALTER TABLE " + esquema + ".cita DROP CONSTRAINT " + nombre);
+      }
+
+      List<Integer> estados = reservaEnParalelo(java.util.Collections.nCopies(6, cuerpo));
+
+      dejaConstancia("sin EXCLUDE (control)", estados);
+      assertThat(Integer.parseInt(texto("SELECT count(*) FROM " + esquema + ".cita")))
+          .as("sin las EXCLUDE entra más de una cita en la misma franja")
+          .isGreaterThan(1);
+    } finally {
+      ejecuta("TRUNCATE " + esquema + ".cita RESTART IDENTITY");
+      for (int i = 0; i < nombres.size(); i++) {
+        ejecuta(
+            "ALTER TABLE "
+                + esquema
+                + ".cita ADD CONSTRAINT "
+                + nombres.get(i)
+                + " "
+                + definiciones.get(i));
+      }
+    }
+  }
+
+  /**
+   * Rondas de cada carrera: una sola puede salir bien por suerte del orden de llegada. Con varias,
+   * un 500 por interbloqueo aparece de forma fiable (#199).
+   */
+  private static final int RONDAS = 5;
+
+  /**
+   * Lanza las peticiones a la vez: todas esperan en la misma barrera y salen juntas. No usa {@code
+   * sleep}: la sincronización es un {@link CountDownLatch}.
+   */
+  private List<Integer> reservaEnParalelo(List<String> cuerpos) throws Exception {
+    String token = tokenAdmin();
+    CountDownLatch preparadas = new CountDownLatch(cuerpos.size());
+    CountDownLatch salida = new CountDownLatch(1);
+    ExecutorService hilos = Executors.newFixedThreadPool(cuerpos.size());
+    try {
+      List<Future<Integer>> futuros = new java.util.ArrayList<>();
+      for (String cuerpo : cuerpos) {
+        futuros.add(
+            hilos.submit(
+                () -> {
+                  preparadas.countDown();
+                  if (!salida.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("No se liberó la barrera de concurrencia");
+                  }
+                  try {
+                    return mockMvc
+                        .perform(
+                            post("/api/v1/citas")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(cuerpo))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+                  } catch (jakarta.servlet.ServletException excepcion) {
+                    // Una excepción sin manejar llega al cliente como 500: se cuenta como tal
+                    // para que la constancia diga qué recibió cada petición.
+                    System.out.println("[#199] petición con excepción sin manejar: " + excepcion);
+                    return 500;
+                  }
+                }));
+      }
+      assertThat(preparadas.await(10, TimeUnit.SECONDS)).isTrue();
+      salida.countDown();
+      List<Integer> estados = new java.util.ArrayList<>();
+      for (Future<Integer> futuro : futuros) {
+        estados.add(futuro.get(60, TimeUnit.SECONDS));
+      }
+      return estados;
+    } finally {
+      hilos.shutdownNow();
+    }
+  }
+
+  /** Deja en la salida de la prueba cuántas ganaron y cuántas recibieron 409 (#199). */
+  private static void dejaConstancia(String caso, List<Integer> estados) {
+    long ganadoras = estados.stream().filter(estado -> estado == 201).count();
+    long conflictos = estados.stream().filter(estado -> estado == 409).count();
+    System.out.printf(
+        "[#199] %s: %d peticiones, %d ganaron (201), %d recibieron 409, %d otro, estados=%s%n",
+        caso,
+        estados.size(),
+        ganadoras,
+        conflictos,
+        estados.size() - ganadoras - conflictos,
+        estados);
+  }
+
+  private static long consultorioConHorario(String nombre, LocalDate fecha) throws SQLException {
+    long id = creaConsultorio(nombre);
+    ejecuta(
+        "INSERT INTO "
+            + esquema
+            + ".horario_consultorio (consultorio_id, dia_semana, inicio, fin) VALUES ("
+            + id
+            + ", "
+            + fecha.getDayOfWeek().getValue()
+            + ", '09:00', '17:00')");
+    return id;
+  }
+
   private EscenarioCita escenarioCita() throws SQLException {
     registraMascota();
     ZoneId zona = ZoneId.of("America/Mexico_City");
