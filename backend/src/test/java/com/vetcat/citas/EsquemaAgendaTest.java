@@ -794,12 +794,15 @@ class EsquemaAgendaTest {
     String cuerpo =
         solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0));
 
-    List<Integer> estados = reservaEnParalelo(java.util.Collections.nCopies(6, cuerpo));
+    for (int ronda = 1; ronda <= RONDAS; ronda++) {
+      ejecuta("TRUNCATE " + esquema + ".cita RESTART IDENTITY");
+      List<Integer> estados = reservaEnParalelo(java.util.Collections.nCopies(6, cuerpo));
 
-    dejaConstancia("misma franja y consultorio", estados);
-    assertThat(estados).filteredOn(estado -> estado == 201).hasSize(1);
-    assertThat(estados).filteredOn(estado -> estado == 409).hasSize(5);
-    assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+      dejaConstancia("misma franja y consultorio, ronda " + ronda, estados);
+      assertThat(estados).as("ronda %d", ronda).filteredOn(estado -> estado == 201).hasSize(1);
+      assertThat(estados).as("ronda %d", ronda).filteredOn(estado -> estado == 409).hasSize(5);
+      assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+    }
   }
 
   /** Variante de #199: consultorios y veterinarios distintos a la misma hora; las dos ganan. */
@@ -824,16 +827,19 @@ class EsquemaAgendaTest {
   void el_mismo_veterinario_en_dos_consultorios_a_la_vez_solo_gana_una() throws Exception {
     EscenarioCita escenario = escenarioCita();
     long otroConsultorio = consultorioConHorario("Consultorio 2", escenario.fecha());
+    List<String> cuerpos =
+        List.of(
+            solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0)),
+            solicitudCita(1, veterinarioId, otroConsultorio, escenario.inicio(10, 0)));
 
-    List<Integer> estados =
-        reservaEnParalelo(
-            List.of(
-                solicitudCita(1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0)),
-                solicitudCita(1, veterinarioId, otroConsultorio, escenario.inicio(10, 0))));
+    for (int ronda = 1; ronda <= RONDAS; ronda++) {
+      ejecuta("TRUNCATE " + esquema + ".cita RESTART IDENTITY");
+      List<Integer> estados = reservaEnParalelo(cuerpos);
 
-    dejaConstancia("mismo veterinario, dos consultorios", estados);
-    assertThat(estados).containsExactlyInAnyOrder(201, 409);
-    assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+      dejaConstancia("mismo veterinario, dos consultorios, ronda " + ronda, estados);
+      assertThat(estados).as("ronda %d", ronda).containsExactlyInAnyOrder(201, 409);
+      assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+    }
   }
 
   /**
@@ -884,6 +890,12 @@ class EsquemaAgendaTest {
   }
 
   /**
+   * Rondas de cada carrera: una sola puede salir bien por suerte del orden de llegada. Con varias,
+   * un 500 por interbloqueo aparece de forma fiable (#199).
+   */
+  private static final int RONDAS = 5;
+
+  /**
    * Lanza las peticiones a la vez: todas esperan en la misma barrera y salen juntas. No usa {@code
    * sleep}: la sincronización es un {@link CountDownLatch}.
    */
@@ -893,7 +905,7 @@ class EsquemaAgendaTest {
     CountDownLatch salida = new CountDownLatch(1);
     ExecutorService hilos = Executors.newFixedThreadPool(cuerpos.size());
     try {
-      List<Future<MvcResult>> futuros = new java.util.ArrayList<>();
+      List<Future<Integer>> futuros = new java.util.ArrayList<>();
       for (String cuerpo : cuerpos) {
         futuros.add(
             hilos.submit(
@@ -902,20 +914,29 @@ class EsquemaAgendaTest {
                   if (!salida.await(10, TimeUnit.SECONDS)) {
                     throw new IllegalStateException("No se liberó la barrera de concurrencia");
                   }
-                  return mockMvc
-                      .perform(
-                          post("/api/v1/citas")
-                              .header("Authorization", "Bearer " + token)
-                              .contentType(MediaType.APPLICATION_JSON)
-                              .content(cuerpo))
-                      .andReturn();
+                  try {
+                    return mockMvc
+                        .perform(
+                            post("/api/v1/citas")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(cuerpo))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+                  } catch (jakarta.servlet.ServletException excepcion) {
+                    // Una excepción sin manejar llega al cliente como 500: se cuenta como tal
+                    // para que la constancia diga qué recibió cada petición.
+                    System.out.println("[#199] petición con excepción sin manejar: " + excepcion);
+                    return 500;
+                  }
                 }));
       }
       assertThat(preparadas.await(10, TimeUnit.SECONDS)).isTrue();
       salida.countDown();
       List<Integer> estados = new java.util.ArrayList<>();
-      for (Future<MvcResult> futuro : futuros) {
-        estados.add(futuro.get(60, TimeUnit.SECONDS).getResponse().getStatus());
+      for (Future<Integer> futuro : futuros) {
+        estados.add(futuro.get(60, TimeUnit.SECONDS));
       }
       return estados;
     } finally {
@@ -928,8 +949,13 @@ class EsquemaAgendaTest {
     long ganadoras = estados.stream().filter(estado -> estado == 201).count();
     long conflictos = estados.stream().filter(estado -> estado == 409).count();
     System.out.printf(
-        "[#199] %s: %d peticiones, %d ganaron (201), %d recibieron 409, estados=%s%n",
-        caso, estados.size(), ganadoras, conflictos, estados);
+        "[#199] %s: %d peticiones, %d ganaron (201), %d recibieron 409, %d otro, estados=%s%n",
+        caso,
+        estados.size(),
+        ganadoras,
+        conflictos,
+        estados.size() - ganadoras - conflictos,
+        estados);
   }
 
   private static long consultorioConHorario(String nombre, LocalDate fecha) throws SQLException {
