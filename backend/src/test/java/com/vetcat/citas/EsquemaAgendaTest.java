@@ -2,6 +2,7 @@ package com.vetcat.citas;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,7 +27,16 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +49,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
@@ -57,6 +68,14 @@ class EsquemaAgendaTest {
   private static String otroEsquema;
   private static long clinicaId;
   private static long otraClinicaId;
+  private static long veterinarioId;
+  private static long otroVeterinarioId;
+  private static long veterinarioInactivoId;
+  private static long veterinarioOtraClinicaId;
+  private static final UUID VETERINARIO_UUID =
+      UUID.fromString("00000000-0000-0000-0000-000000000101");
+  private static final UUID OTRO_VETERINARIO_UUID =
+      UUID.fromString("00000000-0000-0000-0000-000000000102");
 
   @PersistenceContext(unitName = "tenant")
   EntityManager tenantEm;
@@ -126,6 +145,15 @@ class EsquemaAgendaTest {
         .locations("filesystem:../database/migrations/tenant")
         .load()
         .migrate();
+
+    veterinarioId = registraVeterinario(VETERINARIO_UUID, clinicaId, "ACTIVO");
+    otroVeterinarioId = registraVeterinario(OTRO_VETERINARIO_UUID, clinicaId, "ACTIVO");
+    veterinarioInactivoId =
+        registraVeterinario(
+            UUID.fromString("00000000-0000-0000-0000-000000000103"), clinicaId, "INACTIVO");
+    veterinarioOtraClinicaId =
+        registraVeterinario(
+            UUID.fromString("00000000-0000-0000-0000-000000000104"), otraClinicaId, "ACTIVO");
   }
 
   @BeforeEach
@@ -143,6 +171,20 @@ class EsquemaAgendaTest {
             + esquema
             + ".mascota, "
             + esquema
+            + ".propietario RESTART IDENTITY CASCADE");
+    ejecuta(
+        "TRUNCATE "
+            + otroEsquema
+            + ".horario_consultorio, "
+            + otroEsquema
+            + ".bloqueo_agenda, "
+            + otroEsquema
+            + ".cita, "
+            + otroEsquema
+            + ".consultorio, "
+            + otroEsquema
+            + ".mascota, "
+            + otroEsquema
             + ".propietario RESTART IDENTITY CASCADE");
   }
 
@@ -450,6 +492,368 @@ class EsquemaAgendaTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"nombre\":\"Sin permiso\"}"))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void crear_cita_valida_devuelve_201_y_sobre() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + tokenAdmin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.mascotaId").value(1))
+        .andExpect(jsonPath("$.data.veterinarioId").value(veterinarioId))
+        .andExpect(jsonPath("$.data.estado").value("PENDIENTE"));
+  }
+
+  @Test
+  void valida_horario_cierre_y_bloqueos_de_consultorio_y_veterinario() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String token = tokenAdmin();
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(20, 0))))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.message").value(containsString("fuera del horario")));
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(16, 45))))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.message").value(containsString("fuera del horario")));
+
+    ZonedDateTime horaUtc = escenario.fecha().atTime(10, 0).atZone(ZoneId.of("UTC"));
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(solicitudCita(1, veterinarioId, escenario.consultorioId(), horaUtc)))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.message").value(containsString("fuera del horario")));
+
+    ejecuta(
+        "INSERT INTO "
+            + esquema
+            + ".horario_consultorio (consultorio_id, fecha_excepcion, es_cierre) VALUES ("
+            + escenario.consultorioId()
+            + ", '"
+            + escenario.fecha()
+            + "', true)");
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.message").value(containsString("cerrado")));
+
+    ejecuta(
+        "DELETE FROM "
+            + esquema
+            + ".horario_consultorio WHERE consultorio_id = "
+            + escenario.consultorioId()
+            + " AND fecha_excepcion = '"
+            + escenario.fecha()
+            + "'");
+    insertaBloqueo(
+        veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0), "Mantenimiento");
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.message").value(containsString("Mantenimiento")));
+
+    insertaBloqueo(veterinarioId, null, escenario.inicio(11, 0), "Capacitación");
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(11, 0))))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.message").value(containsString("Capacitación")));
+  }
+
+  @Test
+  void veterinario_solo_crea_citas_para_si_mismo() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String token = tokens.emitir(VETERINARIO_UUID.toString(), clinicaId, List.of("veterinario"));
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, otroVeterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.message").value(containsString("propia agenda")))
+        .andExpect(jsonPath("$.data").value(nullValue()));
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isCreated());
+  }
+
+  @Test
+  void clinica_admin_y_veterinario_pueden_asignar_a_otro_veterinario() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String token =
+        tokens.emitir(
+            VETERINARIO_UUID.toString(), clinicaId, List.of("clinica_admin", "veterinario"));
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, otroVeterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.veterinarioId").value(otroVeterinarioId));
+  }
+
+  @Test
+  void rechaza_veterinario_inactivo_y_datos_de_otra_clinica() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String token = tokenAdmin();
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1,
+                        veterinarioInactivoId,
+                        escenario.consultorioId(),
+                        escenario.inicio(10, 0))))
+        .andExpect(status().isNotFound());
+
+    ejecuta(
+        "UPDATE "
+            + esquema
+            + ".consultorio SET activo = false WHERE id = "
+            + escenario.consultorioId());
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isUnprocessableEntity());
+
+    ejecuta(
+        "INSERT INTO "
+            + otroEsquema
+            + ".propietario (nombre, telefono) VALUES ('Clínica B', '555002')");
+    ejecuta(
+        "INSERT INTO "
+            + otroEsquema
+            + ".mascota (propietario_id, nombre, especie) VALUES (1, 'Paciente B1', 'GATO')");
+    ejecuta(
+        "INSERT INTO "
+            + otroEsquema
+            + ".mascota (propietario_id, nombre, especie) VALUES (1, 'Paciente B2', 'GATO')");
+    ejecuta("INSERT INTO " + otroEsquema + ".consultorio (nombre) VALUES ('Consultorio B1')");
+    ejecuta("INSERT INTO " + otroEsquema + ".consultorio (nombre) VALUES ('Consultorio B2')");
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        2, veterinarioId, escenario.consultorioId(), escenario.inicio(10, 0))))
+        .andExpect(status().isNotFound());
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    solicitudCita(
+                        1,
+                        veterinarioOtraClinicaId,
+                        escenario.consultorioId(),
+                        escenario.inicio(10, 0))))
+        .andExpect(status().isNotFound());
+
+    mockMvc
+        .perform(
+            post("/api/v1/citas")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(solicitudCita(1, veterinarioId, 2, escenario.inicio(10, 0))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void solicitudes_concurrentes_de_la_misma_franja_dejan_una_cita() throws Exception {
+    EscenarioCita escenario = escenarioCita();
+    String token = tokenAdmin();
+    CountDownLatch preparadas = new CountDownLatch(2);
+    CountDownLatch iniciar = new CountDownLatch(1);
+    ExecutorService ejecutores = Executors.newFixedThreadPool(2);
+    try {
+      Callable<MvcResult> peticion =
+          () -> {
+            preparadas.countDown();
+            if (!iniciar.await(10, TimeUnit.SECONDS)) {
+              throw new IllegalStateException("No se liberó la barrera de concurrencia");
+            }
+            return mockMvc
+                .perform(
+                    post("/api/v1/citas")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                            solicitudCita(
+                                1,
+                                veterinarioId,
+                                escenario.consultorioId(),
+                                escenario.inicio(10, 0))))
+                .andReturn();
+          };
+      Future<MvcResult> primera = ejecutores.submit(peticion);
+      Future<MvcResult> segunda = ejecutores.submit(peticion);
+      assertThat(preparadas.await(10, TimeUnit.SECONDS)).isTrue();
+      iniciar.countDown();
+
+      MvcResult resultadoUno = primera.get(30, TimeUnit.SECONDS);
+      MvcResult resultadoDos = segunda.get(30, TimeUnit.SECONDS);
+      List<MvcResult> resultados = List.of(resultadoUno, resultadoDos);
+      assertThat(resultados.stream().map(resultado -> resultado.getResponse().getStatus()).toList())
+          .containsExactlyInAnyOrder(201, 409);
+      String error =
+          resultados.stream()
+              .filter(resultado -> resultado.getResponse().getStatus() == 409)
+              .findFirst()
+              .orElseThrow()
+              .getResponse()
+              .getContentAsString();
+      assertThat((Boolean) JsonPath.read(error, "$.success")).isFalse();
+      assertThat((String) JsonPath.read(error, "$.message")).contains("franja");
+      assertThat((Object) JsonPath.read(error, "$.data")).isNull();
+      assertThat(texto("SELECT count(*) FROM " + esquema + ".cita")).isEqualTo("1");
+    } finally {
+      ejecutores.shutdownNow();
+    }
+  }
+
+  private EscenarioCita escenarioCita() throws SQLException {
+    registraMascota();
+    ZoneId zona = ZoneId.of("America/Mexico_City");
+    LocalDate fecha = LocalDate.now(zona).plusDays(2);
+    long consultorioId = creaConsultorio("Consultorio de citas");
+    ejecuta(
+        "INSERT INTO "
+            + esquema
+            + ".horario_consultorio (consultorio_id, dia_semana, inicio, fin) VALUES ("
+            + consultorioId
+            + ", "
+            + fecha.getDayOfWeek().getValue()
+            + ", '09:00', '17:00')");
+    return new EscenarioCita(consultorioId, fecha, zona);
+  }
+
+  private String tokenAdmin() {
+    return tokens.emitir("admin", clinicaId, List.of("clinica_admin"));
+  }
+
+  private static String solicitudCita(
+      long mascotaId, long veterinarioId, long consultorioId, ZonedDateTime inicio) {
+    return """
+        {"mascotaId":%d,"veterinarioId":%d,"consultorioId":%d,"inicio":"%s","duracionMinutos":30}
+        """
+        .formatted(mascotaId, veterinarioId, consultorioId, inicio.toOffsetDateTime());
+  }
+
+  private static void insertaBloqueo(
+      long veterinarioId, Long consultorioId, ZonedDateTime inicio, String motivo)
+      throws SQLException {
+    String valores = consultorioId == null ? veterinarioId + ", NULL" : "NULL, " + consultorioId;
+    Instant desde = inicio.toInstant();
+    Instant hasta = inicio.plusMinutes(30).toInstant();
+    ejecuta(
+        "INSERT INTO "
+            + esquema
+            + ".bloqueo_agenda (veterinario_id, consultorio_id, inicio, fin, motivo) VALUES ("
+            + valores
+            + ", '"
+            + desde
+            + "', '"
+            + hasta
+            + "', '"
+            + motivo
+            + "')");
+  }
+
+  private record EscenarioCita(long consultorioId, LocalDate fecha, ZoneId zona) {
+    ZonedDateTime inicio(int hora, int minuto) {
+      return fecha.atTime(hora, minuto).atZone(zona);
+    }
+  }
+
+  private static long registraVeterinario(UUID usuarioId, long idClinica, String estado)
+      throws SQLException {
+    try (Connection conexion = conexion();
+        Statement sentencia = conexion.createStatement();
+        ResultSet resultado =
+            sentencia.executeQuery(
+                "INSERT INTO catalogo.usuario_clinica (keycloak_id, clinica_id, rol, estado) "
+                    + "VALUES ('"
+                    + usuarioId
+                    + "', "
+                    + idClinica
+                    + ", 'veterinario', '"
+                    + estado
+                    + "') RETURNING id")) {
+      resultado.next();
+      return resultado.getLong(1);
+    }
   }
 
   private static Connection conexion() throws SQLException {

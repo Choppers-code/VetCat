@@ -291,10 +291,19 @@ paths:
       summary: Crear una cita en consultorio (AGE-001, AGE-002, AGE-003).
       description: >-
         Roles: clinica_admin, recepcionista, veterinario. La cita nace
-        PENDIENTE. El veterinario solo puede crear citas en su propia agenda.
-        Devuelve 409 si la restricción de exclusión detecta un empalme y 422
-        si la franja está fuera de horario, bloqueada o los datos no pertenecen
-        a la clínica activa. La zona horaria se obtiene de la clínica.
+        PENDIENTE. veterinarioId identifica la membresía activa del veterinario
+        en catalogo.usuario_clinica. La restricción a la agenda propia aplica
+        solo cuando veterinario es el único rol con permiso de crear citas;
+        quien también tenga clinica_admin o recepcionista puede asignar otro
+        veterinario activo de la clínica.
+        consultorioId, veterinarioId y mascotaId deben pertenecer a la clínica
+        activa; el consultorio, la mascota y la membresía deben estar activos.
+        Devuelve 404 si un identificador no existe en la clínica activa. Devuelve
+        409 si la restricción de exclusión detecta un empalme y 422
+        si la franja está fuera del horario efectivo, el consultorio está cerrado,
+        hay un bloqueo o la cita está en el pasado. Devuelve 403 si un veterinario
+        intenta asignar la cita a otra persona. Los horarios y bloqueos se evalúan
+        en la zona horaria de la clínica, nunca en una zona elegida por el cliente.
       operationId: crearCita
       requestBody:
         required: true
