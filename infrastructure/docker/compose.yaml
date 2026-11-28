@@ -91,21 +91,23 @@ services:
   # El esquema llega en cada ejecución, nunca fijo aquí:
   #   docker compose run --rm -e FLYWAY_SCHEMAS=clinica_001,ext \
   #     -e FLYWAY_DEFAULT_SCHEMA=clinica_001 migraciones-tenant
-  # `scripts/sembrar-demo.ps1` lo corre para cada clínica del catálogo y deja el
-  # estado en `catalogo.migracion_tenant` (docs/Despliegue_y_operacion.md §5).
+  # `scripts/migrar-esquemas.ps1` lo corre para cada clínica activa del catálogo
+  # y deja el estado en `catalogo.migracion_tenant` (Despliegue_y_operacion.md §5).
   # `ext` va en la lista porque ahí vive btree_gist, igual que en MigradorTenant.
-  # Sin un esquema `clinica_NNN` se niega a correr: Flyway caería en `public` y
-  # crearía ahí las tablas de una clínica.
+  # Se niega a correr si el esquema no es exactamente `clinica_` más dígitos (tres
+  # o más) o si FLYWAY_SCHEMAS no es ese mismo esquema seguido de `ext`: Flyway
+  # caería en `public` o en otro esquema y crearía ahí las tablas de una clínica.
   migraciones-tenant:
     image: flyway/flyway:11.14.1-alpine
     restart: "no"
     entrypoint: ["sh", "-c"]
     command:
       - >-
-        case "$$FLYWAY_DEFAULT_SCHEMA" in
-        clinica_[0-9][0-9][0-9]*) exec flyway migrate ;;
-        *) echo "Falta FLYWAY_DEFAULT_SCHEMA=clinica_NNN" >&2; exit 2 ;;
-        esac
+        echo "$$FLYWAY_DEFAULT_SCHEMA" | grep -Eq '^clinica_[0-9]{3,}$$' &&
+        [ "$$FLYWAY_SCHEMAS" = "$$FLYWAY_DEFAULT_SCHEMA,ext" ] &&
+        exec flyway migrate;
+        echo "Hace falta FLYWAY_DEFAULT_SCHEMA=clinica_NNN y FLYWAY_SCHEMAS=clinica_NNN,ext" >&2;
+        exit 2
     profiles: ["migraciones-tenant"]
     environment:
       FLYWAY_URL: jdbc:postgresql://postgres:5432/${VETCAT_DB}
