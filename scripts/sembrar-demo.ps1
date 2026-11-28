@@ -5,39 +5,62 @@
 
 .DESCRIPTION
     Con el stack levantado (`docker compose up -d`) y el catálogo migrado
-    (`docker compose run --rm migraciones`), hace tres cosas y se puede repetir
+    (`docker compose run --rm migraciones`), hace cinco cosas y se puede repetir
     sin duplicar nada:
 
       1. Crea las clínicas «Veterinaria Norte» y «Veterinaria Sur» si no existen.
-      2. Migra el esquema de cada clínica del catálogo con el historial de
-         `database/migrations/tenant` (servicio `migraciones-tenant`) y lo marca
-         `aplicada` en `catalogo.migracion_tenant`. También repara cualquier
-         clínica creada antes a mano, como la de `verificar-h1b.ps1`.
+      2. Migra el esquema de toda clínica activa con `migrar-esquemas.ps1`, que
+         también se puede correr solo. Repara cualquier clínica creada antes a
+         mano, como la de `verificar-h1b.ps1`.
       3. Crea los usuarios en el realm `vetcat` y su pertenencia en
          `catalogo.usuario_clinica`:
 
-           dos.clinicas@vetcat.dev   clinica_admin en Norte y veterinario en Sur
+           dos.clinicas@vetcat.dev   clinica_admin y veterinario en Norte,
+                                     veterinario en Sur
            recepcion@vetcat.dev      recepcionista en Norte
            cliente@vetcat.dev        cliente en Norte
 
-    Con eso la demo tiene el paso 3 (elegir entre dos clínicas), el 6 (la ficha
-    de Norte con el token de Sur da 404) y el 7 (el cliente recibe 403).
+      4. Propietarios y mascotas: Ana Torres (Luna y Rocky) y Beto Ruiz (Michi)
+         en Norte; Carla Mendez (Nube) en Sur.
+      5. Agenda de Norte: «Consultorio 1» con horario de 08:00 a 20:00 todos los
+         días, para crear citas (paso 8) sin SQL a mano.
+
+    Con eso la demo tiene el paso 3 (elegir entre dos clínicas), el 4 y el 5
+    (búsqueda, ficha y alta), el 6 (el 404 se enseña con Beto, id 2: el id 1
+    existe en las dos clínicas), el 7 (el cliente recibe 403) y el 8 (al final
+    se imprimen el veterinarioId, el consultorioId y el mascotaId que usa).
 
     Solo para local: no toca el export del realm ni corre contra un Keycloak que
     no esté en localhost. No necesita la API levantada.
 
 .PARAMETER Contrasena
-    La misma para los tres usuarios. Solo local.
+    La misma para los tres usuarios. Solo local. Si no se pasa, se lee de
+    VETCAT_DEMO_CONTRASENA en el .env.
 
 .EXAMPLE
     .\scripts\sembrar-demo.ps1
+
+.NOTES
+    Correr la app contra este entorno (teléfono por USB o emulador):
+
+        adb reverse tcp:8080 tcp:8080
+        adb reverse tcp:8090 tcp:8090
+        cd frontend\apps\vetcat_app
+        flutter run --dart-define=KEYCLOAK_EMISOR=http://localhost:8080/realms/vetcat --dart-define=API_BASE_URL=http://localhost:8090/api/v1
+
+    - API_BASE_URL lleva /api/v1: sin él la app llama fuera de la API, recibe
+      401 y cierra la sesión sin avisar.
+    - Con adb reverse la app usa localhost igual que los scripts, así que la
+      API arranca sin cambiar VETCAT_KEYCLOAK_EMISOR.
+    - Si `adb` no se reconoce en PowerShell:
+        Set-Alias adb "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 #>
 [CmdletBinding()]
 param(
     [string]$EnvFile = '',
     [string]$ComposeFile = '',
     [string]$KeycloakUrl = '',
-    [string]$Contrasena = 'Demo-solo-local-2026'
+    [string]$Contrasena = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,6 +97,11 @@ if (-not $KeycloakUrl) {
     $KeycloakUrl = "http://localhost:$puerto"
 }
 $KeycloakUrl = $KeycloakUrl.TrimEnd('/')
+if (-not $Contrasena) { $Contrasena = $entorno['VETCAT_DEMO_CONTRASENA'] }
+if (-not $Contrasena) {
+    $Contrasena = 'Demo-solo-local-2026'
+    Write-Host "Aviso: falta VETCAT_DEMO_CONTRASENA en $EnvFile; uso la de .env.example." -ForegroundColor Yellow
+}
 # Candado: estos usuarios y contraseñas son de demostración y no deben llegar a
 # un Keycloak compartido.
 if (([uri]$KeycloakUrl).Host -notin @('localhost', '127.0.0.1')) {
@@ -91,7 +119,8 @@ function Invoke-Psql([string]$Sql) {
 $clinicas = @('Veterinaria Norte', 'Veterinaria Sur')
 $usuarios = @(
     @{ Correo = 'dos.clinicas@vetcat.dev'; Nombre = 'Demo'; Apellido = 'Dos Clinicas'
-       Roles = @(@{ Clinica = 'Veterinaria Norte'; Rol = 'clinica_admin' }, @{ Clinica = 'Veterinaria Sur'; Rol = 'veterinario' }) },
+       Roles = @(@{ Clinica = 'Veterinaria Norte'; Rol = 'clinica_admin' }, @{ Clinica = 'Veterinaria Norte'; Rol = 'veterinario' },
+                 @{ Clinica = 'Veterinaria Sur'; Rol = 'veterinario' }) },
     @{ Correo = 'recepcion@vetcat.dev'; Nombre = 'Demo'; Apellido = 'Recepcion'
        Roles = @(@{ Clinica = 'Veterinaria Norte'; Rol = 'recepcionista' }) },
     @{ Correo = 'cliente@vetcat.dev'; Nombre = 'Demo'; Apellido = 'Cliente'
@@ -124,44 +153,12 @@ SELECT coalesce((SELECT id FROM nueva), (SELECT min(id) FROM catalogo.clinica WH
 }
 
 # --- 2. Esquema de cada clínica ------------------------------------------------------
-# Toda clínica activa queda registrada en migracion_tenant y se le pasa Flyway:
-# Flyway no repite lo ya aplicado, así que también pone al día un esquema viejo.
-try {
-    $esquemas = Invoke-Psql @"
-INSERT INTO catalogo.migracion_tenant (esquema)
-SELECT esquema FROM catalogo.clinica
-WHERE estado = 'ACTIVA'
-ON CONFLICT (esquema) DO NOTHING;
-SELECT esquema FROM catalogo.clinica WHERE estado = 'ACTIVA' ORDER BY id;
-"@
-} catch {
-    Add-Resultado '2. Esquemas' 'FALLA' $_.Exception.Message
-    Show-Resumen
-}
-foreach ($esquema in $esquemas) {
-    if ($esquema -notmatch '^clinica_\d{3,}$') { Add-Resultado "2. Esquema $esquema" 'FALLA' 'nombre inesperado'; continue }
-    # docker compose escribe su progreso en stderr; con 'Stop', Windows PowerShell
-    # lo tomaría como error. Aquí se decide por el código de salida.
-    $ErrorActionPreference = 'Continue'
-    $salida = & docker compose -f $ComposeFile --env-file $EnvFile run --rm -T `
-        -e "FLYWAY_SCHEMAS=$esquema,ext" -e "FLYWAY_DEFAULT_SCHEMA=$esquema" migraciones-tenant 2>&1
-    $codigo = $LASTEXITCODE
-    $ErrorActionPreference = 'Stop'
-    if ($codigo -ne 0) {
-        Invoke-Psql "UPDATE catalogo.migracion_tenant SET estado = 'fallida', ultimo_intento = now(), actualizado_en = now() WHERE esquema = '$esquema';" | Out-Null
-        Add-Resultado "2. Esquema $esquema" 'FALLA' ((@($salida) | Select-Object -Last 5) -join ' | ')
-        continue
-    }
-    $version = Invoke-Psql @"
-UPDATE catalogo.migracion_tenant
-SET estado = 'aplicada', ultimo_intento = now(), actualizado_en = now(),
-    version_aplicada = (SELECT version FROM $esquema.flyway_schema_history
-                        WHERE success AND version IS NOT NULL
-                        ORDER BY installed_rank DESC LIMIT 1)
-WHERE esquema = '$esquema'
-RETURNING version_aplicada;
-"@ | Select-Object -Last 1
-    Add-Resultado "2. Esquema $esquema" 'OK' "aplicada, versión $version"
+# El runner de esquemas vive aparte (migrar-esquemas.ps1): migrar no es sembrar.
+& ([IO.Path]::Combine($raiz, 'scripts', 'migrar-esquemas.ps1')) -EnvFile $EnvFile -ComposeFile $ComposeFile
+if ($LASTEXITCODE -ne 0) {
+    Add-Resultado '2. Esquemas' 'FALLA' 'migrar-esquemas.ps1 reportó fallas (detalle arriba)'
+} else {
+    Add-Resultado '2. Esquemas' 'OK' 'todas las clínicas activas al día'
 }
 
 # --- 3. Usuarios y pertenencias -------------------------------------------------------
@@ -177,6 +174,7 @@ try {
     Show-Resumen
 }
 $base = "$KeycloakUrl/admin/realms/vetcat"
+$subDe = @{}
 
 foreach ($u in $usuarios) {
     try {
@@ -195,6 +193,7 @@ foreach ($u in $usuarios) {
             Invoke-RestMethod -Method Put -Uri "$base/users/$($existente[0].id)" -Headers $auth -ContentType 'application/json' -Body $cuerpo | Out-Null
         }
         $sub = $existente[0].id
+        $subDe[$correo] = $sub
         Invoke-RestMethod -Method Put -Uri "$base/users/$sub/reset-password" -Headers $auth -ContentType 'application/json' `
             -Body (@{ type = 'password'; value = $Contrasena; temporary = $false } | ConvertTo-Json) | Out-Null
 
@@ -273,7 +272,51 @@ WHERE NOT EXISTS (
     }
 }
 
+# --- 5. Agenda de Norte (paso 8) -------------------------------------------------------
+# Un consultorio con horario todos los días, para que la cita del paso 8 caiga
+# dentro del horario sea cual sea el día de la demo.
+$paso8 = $null
+try {
+    $norte = $idDe['Veterinaria Norte']
+    $esquema = (Invoke-Psql "SELECT esquema FROM catalogo.clinica WHERE id = $norte;" | Select-Object -Last 1)
+    if ($esquema -notmatch '^clinica_\d{3,}$') { throw "esquema inesperado: $esquema" }
+    $consultorioId = Invoke-Psql @"
+WITH nuevo AS (
+    INSERT INTO $esquema.consultorio (nombre)
+    SELECT 'Consultorio 1'
+    WHERE NOT EXISTS (SELECT 1 FROM $esquema.consultorio WHERE nombre = 'Consultorio 1')
+    RETURNING id
+)
+SELECT coalesce((SELECT id FROM nuevo), (SELECT min(id) FROM $esquema.consultorio WHERE nombre = 'Consultorio 1'));
+"@ | Select-Object -Last 1
+    Invoke-Psql @"
+INSERT INTO $esquema.horario_consultorio (consultorio_id, dia_semana, inicio, fin)
+SELECT $consultorioId, d, '08:00', '20:00' FROM generate_series(1, 7) AS d
+WHERE NOT EXISTS (
+    SELECT 1 FROM $esquema.horario_consultorio h
+    WHERE h.consultorio_id = $consultorioId AND h.dia_semana = d AND h.fecha_excepcion IS NULL
+);
+SELECT 'ok';
+"@ | Out-Null
+    $sub = $subDe['dos.clinicas@vetcat.dev']
+    if (-not $sub) { throw 'no se creó dos.clinicas@vetcat.dev (ver paso 3)' }
+    $veterinarioId = Invoke-Psql "SELECT id FROM catalogo.usuario_clinica WHERE keycloak_id = '$sub' AND clinica_id = $norte AND rol = 'veterinario' AND estado = 'ACTIVO';" | Select-Object -Last 1
+    $mascotaId = Invoke-Psql @"
+SELECT m.id FROM $esquema.mascota m JOIN $esquema.propietario p ON p.id = m.propietario_id
+WHERE m.nombre = 'Luna' AND p.telefono_normalizado = '5551110001' LIMIT 1;
+"@ | Select-Object -Last 1
+    if (-not $veterinarioId -or -not $mascotaId) { throw "faltan datos: veterinarioId=$veterinarioId mascotaId=$mascotaId" }
+    $paso8 = "veterinarioId=$veterinarioId, consultorioId=$consultorioId, mascotaId=$mascotaId (Luna)"
+    Add-Resultado '5. Agenda de Norte' 'OK' "consultorio $consultorioId con horario de 08:00 a 20:00 todos los días"
+} catch {
+    Add-Resultado '5. Agenda de Norte' 'FALLA' $_.Exception.Message
+}
+
 Write-Host ''
 Write-Host "Contraseña de los tres usuarios: $Contrasena" -ForegroundColor Cyan
-Write-Host "Propietarios de demo: 2 en Norte y 1 en Sur, con mascotas." -ForegroundColor Cyan
+Write-Host "Propietarios de demo: 2 en Norte y 1 en Sur, con mascotas. El 404 del paso 6 se enseña con Beto (id 2)." -ForegroundColor Cyan
+if ($paso8) {
+    Write-Host "Paso 8: POST /api/v1/citas en Norte con $paso8." -ForegroundColor Cyan
+}
+Write-Host 'App: ver Get-Help .\scripts\sembrar-demo.ps1 -Full (adb reverse y API_BASE_URL con /api/v1).' -ForegroundColor Cyan
 Show-Resumen

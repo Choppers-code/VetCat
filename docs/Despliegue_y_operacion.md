@@ -25,7 +25,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | Protocolo | HTTP | HTTPS con dominio real y renovación automática |
 | `redirect_uri` de Keycloak | `vetcat://callback` (app) y `http://localhost:8081/admin/callback` (consola) | `https://dominio/admin/callback` (consola); la app mantiene `vetcat://callback` |
 | Correo (recuperación de contraseña e invitaciones) | Mailpit en el compose (UI en `:8025`) | Servidor SMTP real, configurado en Keycloak |
-| Migraciones | `docker compose run --rm migraciones` para el catálogo y `scripts/sembrar-demo.ps1` para los esquemas de clínica, antes de arrancar la API | Los mismos contenedores, como job previo al despliegue |
+| Migraciones | `docker compose run --rm migraciones` para el catálogo y `scripts/migrar-esquemas.ps1` para los esquemas de clínica, antes de arrancar la API | Catálogo: el mismo contenedor, como job previo al despliegue. Esquemas de clínica: runner pendiente (§5) |
 | Logs | Consola | Recolectados y con retención |
 | Secretos | `.env` local, nunca en el repo | Gestor de secretos del proveedor |
 | App Android | APK de debug, URL `10.0.2.2` en emulador o IP de la LAN | APK firmado, URL pública |
@@ -54,6 +54,7 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 | `VETCAT_ADMIN_ORIGIN` | `http://localhost:8081` | Origen del cliente `vetcat-admin`: Web Origin y base de su `redirect_uri` |
 | `VETCAT_TOKEN_CLAVE` | valor local de 32+ bytes | Clave HMAC del token de tenant; la API no arranca sin ella |
 | `VETCAT_DB_URL` | `jdbc:postgresql://localhost:5432/vetcat_db` | URL JDBC de la API; su puerto es el de `POSTGRES_PORT` |
+| `VETCAT_DEMO_CONTRASENA` | `Demo-solo-local-2026` | Contraseña de los usuarios de `sembrar-demo.ps1`; solo local |
 | `PGADMIN_PORT` | `5050` | pgAdmin, solo con el perfil `admin` |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@vetcat.dev` | Cuenta de pgAdmin; rechaza dominios reservados como `.local` |
 | `PGADMIN_DEFAULT_PASSWORD` | valor local | Contraseña de pgAdmin |
@@ -90,13 +91,23 @@ Un cambio no se considera terminado si solo se probó en local. La Definition of
 - El esquema de catálogo se migra una vez; los esquemas de clínica se migran en bucle, con una tabla de estado por tenant para saber cuáles van y reintentar los que fallen.
 - Política de **roll-forward**: si una migración falla a mitad, se corrige y se vuelve a aplicar. El rollback de la imagen anterior solo es seguro si la migración fue expand-only.
 - Prohibido cambiar el tipo del enum de estado con `ALTER TYPE` por esquema; se usa `varchar` con `CHECK`.
-- **En local**, el servicio `migraciones-tenant` migra un esquema de clínica por ejecución y `scripts/sembrar-demo.ps1` lo corre para todas las clínicas activas del catálogo, deja su estado en `catalogo.migracion_tenant` y siembra los datos de la demo (dos clínicas y un usuario por papel). Se puede repetir: Flyway no aplica dos veces la misma versión.
+- **En local**, el servicio `migraciones-tenant` migra un esquema de clínica por ejecución y `scripts/migrar-esquemas.ps1` lo corre para todas las clínicas activas del catálogo y deja su estado en `catalogo.migracion_tenant`. Se puede repetir: Flyway no aplica dos veces la misma versión. `scripts/sembrar-demo.ps1` lo llama y además siembra los datos de la demo; migrar no requiere sembrar.
 
 ## 6. App Android
 
 - **Primer alcance: solo Android.** iOS queda para cuando exista Mac, Xcode y cuenta de Apple Developer.
 - **Una sola app** para `veterinario` y `cliente`, con una vista por rol según la clínica activa. `clinica_admin` y `recepcionista` usan la consola web.
 - Pruebas locales: APK de debug contra `10.0.2.2` (emulador) o la IP de la máquina en la LAN (dispositivo físico).
+- **Forma recomendada en local (teléfono por USB o emulador): `adb reverse`.** La app usa `localhost` igual que los scripts, así que la API arranca sin cambiar `VETCAT_KEYCLOAK_EMISOR`:
+
+  ```
+  adb reverse tcp:8080 tcp:8080
+  adb reverse tcp:8090 tcp:8090
+  cd frontend/apps/vetcat_app
+  flutter run --dart-define=KEYCLOAK_EMISOR=http://localhost:8080/realms/vetcat --dart-define=API_BASE_URL=http://localhost:8090/api/v1
+  ```
+
+  `API_BASE_URL` lleva `/api/v1`: sin él la app llama fuera de la API, recibe 401 y cierra la sesión sin avisar. Con `10.0.2.2` el token sale firmado por `http://10.0.2.2:8080/...` y la API tendría que arrancar con ese `VETCAT_KEYCLOAK_EMISOR`, que rompe los scripts que entran por `localhost`. Si PowerShell no reconoce `adb`: `Set-Alias adb "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"`.
 - El tráfico sin cifrar se permite **solo** en la configuración de debug; en release, HTTPS obligatorio.
 - Firma: keystore como secreto, nunca en el repositorio.
 - Distribución inicial: APK directo. Play Store en la fase de publicación.
