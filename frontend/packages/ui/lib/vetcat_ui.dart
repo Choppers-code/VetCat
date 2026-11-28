@@ -3,6 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+export 'src/fondo.dart';
+export 'src/marca.dart';
 export 'src/tema.dart';
 export 'src/tokens.dart';
 

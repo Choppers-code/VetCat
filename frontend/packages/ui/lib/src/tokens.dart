@@ -53,6 +53,7 @@ abstract final class VetcatColores {
 /// Escala tipográfica (tamaños en puntos lógicos). La fuente es la del
 /// sistema; no se añade ninguna dependencia de fuentes.
 abstract final class VetcatTipografia {
+  static const double marca = 38;
   static const double titulo = 28;
   static const double subtitulo = 20;
   static const double cuerpo = 16;
